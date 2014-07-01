@@ -2,17 +2,19 @@
 
 import time
 
-import control
+import serial_api as control
 
 # Represents LDS sensor, and allows user to control it.
 class LDS:
   spun_up = False
 
-  def __init__(self):
-    control.send_command("SetLDSRotation on")
+  def __init__(self, program):
+    self.program = program
+
+    control.send_command(self.program, "SetLDSRotation on")
   
   def __del__(self):
-    control.send_command("SetLDSRotation off")
+    control.send_command(self.program, "SetLDSRotation off")
     LDS.spun_up = False
 
   # Wait for sensor to spin up.
@@ -30,7 +32,7 @@ class LDS:
 
   # Helper to get and parse a complete scan packet.
   def __get_scan(self):
-    packet = control.get_output("GetLDSScan")
+    packet = control.get_output(self.program, "GetLDSScan")
 
     # Get rid of help message.
     packet.pop("AngleInDegrees", None)

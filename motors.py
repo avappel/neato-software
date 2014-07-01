@@ -3,12 +3,14 @@
 import time
 
 from sensors import LDS
-import control
+import serial_api as control
 
 class Wheels:
   enabled = False
 
-  def __init__(self):
+  def __init__(self, program):
+    self.program = program
+
     self.enable()
 
   def __del__(self):  
@@ -24,7 +26,7 @@ class Wheels:
   # Enables both drive motors.
   def enable(self, block = True):
     if not self.enabled:
-      control.send_command("SetMotor LWheelEnable RWheelEnable")
+      control.send_command(self.program, "SetMotor LWheelEnable RWheelEnable")
       self.enabled = True
 
       if block:
@@ -33,7 +35,7 @@ class Wheels:
   # Disables both drive motors.
   def disable(self):
     if self.enabled:
-      control.send_command("SetMotor LWheelDisable RWheelDisable")
+      control.send_command(self.program, "SetMotor LWheelDisable RWheelDisable")
       self.enabled = False
 
   # A version of drive that employs the LDS in order to not crash into things.
@@ -41,7 +43,7 @@ class Wheels:
     # Max speed here is 200 for safety reasons.
     speed = min(speed, 200)
 
-    lds = LDS()
+    lds = LDS(self.program)
     paused = True
     watching = {}
     danger = []
@@ -113,25 +115,25 @@ class Wheels:
   
   # Instruct the drive motors to move.
   def drive(self, left_dist, right_dist, speed, block = True):
-    control.send_command("SetMotor %d %d %d" % (left_dist, right_dist, speed))
+    control.send_command(self.program, "SetMotor %d %d %d" % (left_dist, right_dist, speed))
   
     if block:
       self.__wait_for_stop()
       
   # Stops both drive motors immediately.
   def stop(self):
-    control.send_command("SetMotor -1 -1 300")
+    control.send_command(self.program, "SetMotor -1 -1 300")
 
   # Get RPMs of wheel motors.
   def get_wheel_rpms(self):
-    info = control.get_output("GetMotors")
+    info = control.get_output(self.program, "GetMotors")
     left = int(info["LeftWheel_RPM"])
     right = int(info["RightWheel_RPM"])
     return (left, right)
   
   # Get the distance traveled by each wheel.
   def get_distance(self):
-    info = control.get_output("GetMotors")
+    info = control.get_output(self.program, "GetMotors")
     left = int(info["LeftWheel_PositionInMM"])
     right = int(info["RightWheel_PositionInMM"])
     return (left, right)
