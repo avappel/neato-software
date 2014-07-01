@@ -58,4 +58,20 @@ class LDS:
 
   # Returns the rotation speed of the LDS sensor.
   def rotation_speed(self):
-    return self.__get_scan()["ROTATION_SPEED"] 
+    return self.__get_scan()["ROTATION_SPEED"]
+
+# A class for the analog sensors.
+class Analog:
+  def __init__(self, program):
+    self.program = program
+
+  def __get_sensors(self):
+    return control.get_output(self.program, "GetAnalogSensors")
+
+  # Gets readings from the drop sensors.
+  def drop(self):
+    info = self.__get_sensors()
+    left = int(info["LeftDropInMM"])
+    right = int(info["RightDropInMM"])
+    
+    return (left, right)

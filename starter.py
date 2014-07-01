@@ -49,7 +49,7 @@ if __name__ == "__main__":
   names = []
   for name in raw_names:
     if name[-3:] == ".py":
-      names.append(name.rstrip(".py"))
+      names.append(name[:-3])
 
   # Instantiate each program.
   programs = []
