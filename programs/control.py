@@ -4,9 +4,10 @@ import sys
 sys.path.append("..")
 
 import serial
-import time
 
 from starter import Program
+
+import rate
 
 class control(Program):
   def run(self):
@@ -15,6 +16,8 @@ class control(Program):
     self.serial.write("testmode on\n")
 
     while True:
+      rate.rate(0.005)
+      
       # Check for commands from all our pipes.
       for pipe in self.pipes:
         if pipe.poll():
@@ -27,8 +30,6 @@ class control(Program):
           else:
             # No need to send the output.
             self.__send_command(command)
-
-      time.sleep(0.005)
 
   # Gets results from a command on the neato.
   def __get_output(self, command):

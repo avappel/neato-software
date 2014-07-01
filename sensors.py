@@ -1,8 +1,8 @@
 # Interfaces with neato command line.
 
-import time
-
 import serial_api as control
+
+import rate
 
 # Represents LDS sensor, and allows user to control it.
 class LDS:
@@ -22,11 +22,11 @@ class LDS:
     if not LDS.spun_up:
       # Wait for a valid packet.
       while True:
+        rate.rate(0.01)
+
         scan = self.__get_scan()
         if len(scan.keys()) > 1:
           break
-        
-        time.sleep(0.01)
       
       LDS.spun_up = True
 

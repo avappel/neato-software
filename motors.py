@@ -5,6 +5,8 @@ import time
 from sensors import LDS
 import serial_api as control
 
+import rate
+
 class Wheels:
   enabled = False
 
@@ -50,6 +52,10 @@ class Wheels:
     initial_distance = self.get_distance()
     
     while True:
+      # Even at max speed, it will take at least this long for anything to
+      # change.
+      rate.rate(0.03)
+
       # Check if we're done.
       if not paused:
         rpms = self.get_wheel_rpms()
@@ -109,10 +115,6 @@ class Wheels:
 
         paused = False
 
-      # Even at max speed, it will take at least this long for anything to
-      # change.
-      time.sleep(0.03)
-  
   # Instruct the drive motors to move.
   def drive(self, left_dist, right_dist, speed, block = True):
     control.send_command(self.program, "SetMotor %d %d %d" % (left_dist, right_dist, speed))
