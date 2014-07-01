@@ -75,3 +75,17 @@ class Analog:
     right = int(info["RightDropInMM"])
     
     return (left, right)
+
+class Digital:
+  def __init__(self, program):
+    self.program = program
+
+  def __get_sensors(self):
+    return control.get_output(self.program, "GetDigitalSensors")
+
+  # Returns whether or not the wheels are extended.
+  def wheels_extended(self):
+    info = self.__get_sensors()
+    left = bool(info["SNSR_LEFT_WHEEL_EXTENDED"])
+    right = bool(info["SNSR_RIGHT_WHEEL_EXTENDED"])
+    return (left, right)

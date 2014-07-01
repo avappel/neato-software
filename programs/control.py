@@ -15,21 +15,35 @@ class control(Program):
     # Enable test mode on the neato.
     self.serial.write("testmode on\n")
 
+    freezing_pipe = None
+
     while True:
       rate.rate(0.005)
       
       # Check for commands from all our pipes.
       for pipe in self.pipes:
         if pipe.poll():
-          output, command = pipe.recv()
+          data = pipe.recv()
           
-          if output:
-            # We need to send the output back.
-            data = self.__get_output(command)
-            pipe.send(data)
+          if data.hasattr("__getitem__"):
+            if (not freezing_pipe or pipe == freezing_pipe):
+              # Normal command.
+              output, command = data
+
+              if output:
+                # We need to send the output back.
+                data = self.__get_output(command)
+                pipe.send(data)
+              else:
+                # No need to send the output.
+                self.__send_command(command)
+
           else:
-            # No need to send the output.
-            self.__send_command(command)
+            # Other command.
+            if (data == "freeze" and not freezing_pipe):
+              freezing_pipe = pipe
+            elif (data == "unfreeze" and pipe == freezing_pipe):
+              freezing_pipe = None
 
   # Gets results from a command on the neato.
   def __get_output(self, command):
