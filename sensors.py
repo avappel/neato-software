@@ -2,6 +2,8 @@
 
 import serial_api as control
 
+from programs import log
+
 import rate
 
 # Represents LDS sensor, and allows user to control it.
@@ -19,6 +21,7 @@ class LDS:
 
   # Wait for sensor to spin up.
   def __spin_up(self):
+    log.debug(self.program, "Waiting for LDS spinup.")
     if not LDS.spun_up:
       # Wait for a valid packet.
       while True:
@@ -29,6 +32,7 @@ class LDS:
           break
       
       LDS.spun_up = True
+    log.debug(self.program, "LDS ready.")
 
   # Helper to get and parse a complete scan packet.
   def __get_scan(self):
@@ -46,6 +50,9 @@ class LDS:
     for key in packet.keys():
       if int(packet[key][2]) == 0:
         ret[int(key)] = [int(x) for x in packet[key]]
+      else:
+        log.debug(self.program, "Error %s in LDS reading for angle %s." % \
+            (packet[key][2], key))
 
     return ret
 
@@ -86,6 +93,7 @@ class Digital:
   # Returns whether or not the wheels are extended.
   def wheels_extended(self):
     info = self.__get_sensors()
-    left = bool(info["SNSR_LEFT_WHEEL_EXTENDED"])
-    right = bool(info["SNSR_RIGHT_WHEEL_EXTENDED"])
+    left = bool(int(info["SNSR_LEFT_WHEEL_EXTENDED"]))
+    right = bool(int(info["SNSR_RIGHT_WHEEL_EXTENDED"]))
+    
     return (left, right)

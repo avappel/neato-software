@@ -2,7 +2,7 @@
 
 # Contains code for starting programs and coordinating them.
 
-from multiprocessing import Pipe, Process
+from multiprocessing import Pipe, Process, Queue
 
 import os
 import sys
@@ -10,26 +10,62 @@ import time
 
 # A class representing a single program to be run on the robot as one process.
 class Program:
-  # Run the program.
   def __init__(self):
     # A list of all the pipes requested.
     self.pipe_names = []
     # A list of all the actual pipe objects.
     self.pipes = []
+    # A list of the feeds that we requested.
+    self.feed_names = []
+    # A list of feeds we own.
+    self.feeds = []
+    # A dictionary of all the feeds we can write to.
+    self.write_feeds = {}
 
     # Run setup routine.
     self.setup()
 
+  # Verify that this name is not already in use.
+  def __check_name_collisions(self, name):
+    in_use = False
+    
+    if name in self.pipe_names:
+      in_use = True
+    if name in self.feed_names:
+      in_use = True
+
+    if in_use:
+      raise ValueError("Name '%s' is already in use." % (name))
+
   # Adds a new pipe to this particular process.
   def add_pipe(self, end):
     name = (self.__class__.__name__, end)
-    if name not in self.pipe_names:
-      self.pipe_names.append(name)
+    self.__check_name_collisions(name)
+
+    self.pipe_names.append(name)
+
+  # Adds a new feed owned by this process.
+  def add_feed(self, name):
+    self.__check_name_collisions(name)
+    self.feed_names.append(name)
 
   # Adds a pipe object to this program. (Used by program dispatcher.)
   def add_pipe_object(self, pipe, name):
     exec("self." + name + " = pipe")
     self.pipes.append(pipe)
+
+  def add_feed_object(self, queue, name):
+    exec("self." + name + " = queue")
+    self.feeds.append(queue)
+
+  # Allows a subclass to write to a named feed.
+  def write_to_feed(self, name, message):
+    try:
+      feed = self.write_feeds[name]
+    except KeyError:
+      raise ValueError("No feed with name '%s' exists." % (name))
+
+    feed.put(message)
 
   # Perform any necessary setup for this program.
   def setup(self):
@@ -44,6 +80,8 @@ if __name__ == "__main__":
   # Check in the programs directory and import everything.
   sys.path.append("programs")
   raw_names = os.listdir("programs")
+
+  raw_names.remove("__init__.py")
   
   # Remove anything we can't import.
   names = []
@@ -70,10 +108,21 @@ if __name__ == "__main__":
         if other_program.__class__.__name__ == name[1]:
           other = other_program
       if not other:
-        raise RuntimeError("Pipe endpoint '%s' is not a known program." % \
+        raise ValueError("Pipe endpoint '%s' is not a known program." % \
             (name[1]))
 
       other.add_pipe_object(end, name[0])
+
+  # Set up the necessary feed systems.
+  for program in programs:
+    for name in program.feed_names:
+      queue = Queue()
+
+      for other_program in programs:
+        if (other_program != program and name not in other_program.write_feeds):
+          other_program.write_feeds[name] = queue
+
+      program.add_feed_object(queue, name)
 
   # Set up and start all the processes for the programs.
   processes = []

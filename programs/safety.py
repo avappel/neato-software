@@ -6,6 +6,7 @@ sys.path.append("..")
 
 from starter import Program
 
+import log
 import motors
 import rate
 import sensors
@@ -27,18 +28,22 @@ class safety(Program):
       
       # Check that we're not about to drive off a drop.
       left, right = analog.drop()
+      log.debug(self, "Drop sensor readings: %d, %d." % (left, right))
       if max(left, right) >= 80:
+        log.info(self, "Detected drop, running drop handler.")
         self.__drop_handler()
 
       # Disable the wheels if someone picked us up.
       if check_extended >= 2:
         left, right = digital.wheels_extended()
         if ((left or right) and not wheels_extended):
+          log.info(self, "Wheels extended, disabling.")
           serial_api.freeze(self)
-          wheels.disable()
+          self.wheels.disable()
           wheels_extended = True
         elif ((not (left or right)) and wheels_extended):
-          wheels.enable()
+          log.info(self, "Wheels not extended, enabling.")
+          self.wheels.enable()
           serial_api.unfreeze(self)
           wheels.extended = False
           

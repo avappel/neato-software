@@ -7,6 +7,7 @@ import serial
 
 from starter import Program
 
+import log
 import rate
 
 class control(Program):
@@ -18,6 +19,8 @@ class control(Program):
     freezing_pipe = None
 
     while True:
+      # TODO (danielp): Change this to a feed-based system with pipes used only
+      # for the output.
       rate.rate(0.005)
       
       # Check for commands from all our pipes.
@@ -25,10 +28,12 @@ class control(Program):
         if pipe.poll():
           data = pipe.recv()
           
-          if data.hasattr("__getitem__"):
+          if type(data) == tuple:
             if (not freezing_pipe or pipe == freezing_pipe):
               # Normal command.
-              output, command = data
+              output = data[0]
+              command = data[1]
+              log.debug("Command: %s" % (command))
 
               if output:
                 # We need to send the output back.
@@ -41,8 +46,10 @@ class control(Program):
           else:
             # Other command.
             if (data == "freeze" and not freezing_pipe):
+              log.info(self, "Freezing control program.")
               freezing_pipe = pipe
             elif (data == "unfreeze" and pipe == freezing_pipe):
+              log.info(self, "Unfreezing control program.")
               freezing_pipe = None
 
   # Gets results from a command on the neato.
@@ -72,8 +79,10 @@ class control(Program):
           split = line.split(",")
           if len(split) > 2:
             ret[split[0]] = split[1:]
-          else:
+          elif len(split) == 2:
             ret[split[0]] = split[1]
+          else:
+            ret[split[0]] = None
 
         return ret
 
