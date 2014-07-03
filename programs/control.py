@@ -11,46 +11,45 @@ import log
 import rate
 
 class control(Program):
+  def setup(self):
+    self.add_feed("control")
+
   def run(self):
     self.serial = serial.Serial(port = "/dev/ttyACM0", timeout = 0)
     # Enable test mode on the neato.
     self.serial.write("testmode on\n")
 
-    freezing_pipe = None
+    freezing_program = None
 
     while True:
-      # TODO (danielp): Change this to a feed-based system with pipes used only
-      # for the output.
-      rate.rate(0.005)
-      
       # Check for commands from all our pipes.
-      for pipe in self.pipes:
-        if pipe.poll():
-          data = pipe.recv()
-          
-          if type(data) == tuple:
-            if (not freezing_pipe or pipe == freezing_pipe):
-              # Normal command.
-              output = data[0]
-              command = data[1]
-              log.debug("Command: %s" % (command))
+      data = self.control.get()
+      source = data[0]
+      
+      if len(data) == 3:
+        if (not freezing_program or source == freezing_program):
+          # Normal command.
+          output = data[1]
+          command = data[2]
+          log.debug(self, "Command: %s" % (command))
 
-              if output:
-                # We need to send the output back.
-                data = self.__get_output(command)
-                pipe.send(data)
-              else:
-                # No need to send the output.
-                self.__send_command(command)
-
+          if output:
+            # We need to send the output back.
+            data = self.__get_output(command)
+            pipe = getattr(self, source)
+            pipe.send(data)
           else:
-            # Other command.
-            if (data == "freeze" and not freezing_pipe):
-              log.info(self, "Freezing control program.")
-              freezing_pipe = pipe
-            elif (data == "unfreeze" and pipe == freezing_pipe):
-              log.info(self, "Unfreezing control program.")
-              freezing_pipe = None
+            # No need to send the output.
+            self.__send_command(command)
+      
+      else:
+        # Other command.
+        if (data[1] == "freeze" and not freezing_program):
+          log.info(self, "Freezing control program.")
+          freezing_program = source
+        elif (data[1] == "unfreeze" and pipe == freezing_pipe):
+          log.info(self, "Unfreezing control program.")
+          freezing_program = None
 
   # Gets results from a command on the neato.
   def __get_output(self, command):
@@ -60,7 +59,7 @@ class control(Program):
     response = ""
     start = False
     while True:
-      line = self.serial.read(1024)
+      line = self.serial.readline()
       if start:
         response += line
 
