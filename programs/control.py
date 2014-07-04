@@ -15,7 +15,7 @@ class control(Program):
     self.add_feed("control")
 
   def run(self):
-    self.serial = serial.Serial(port = "/dev/ttyACM0", timeout = 0)
+    self.serial = serial.Serial(port = "/dev/ttyACM0")
     # Enable test mode on the neato.
     self.serial.write("testmode on\n")
 
@@ -53,17 +53,27 @@ class control(Program):
 
   # Gets results from a command on the neato.
   def __get_output(self, command):
-    self.serial.flushInput()
+    self.serial.flush()
     self.__send_command(command)
 
     response = ""
     start = False
     while True:
-      line = self.serial.readline()
-      if start:
-        response += line
+      try:
+        data = self.serial.read(self.serial.inWaiting())
+      except (OSError, serial.SerialException):
+        # No data to read.
+        log.warning(self, "Got no serial data. Retrying...")
+        continue
 
-      if command in line:
+      if start:
+        response += data
+
+      if command in data:
+        # Remove everything up to the command.
+        data = data.split(command)
+        data = data[1]
+
         start = True
 
       # All responses end with this character.
@@ -72,9 +82,10 @@ class control(Program):
         response = response[:-2]
 
         # All responses are CSVs, so we can turn them into a nice little dict.
-        lines = response.split("\r\n")
+        lines = response.split("\n")
         ret = {}
         for line in lines:
+          line = line.rstrip("\r")
           split = line.split(",")
           if len(split) > 2:
             ret[split[0]] = split[1:]
@@ -83,6 +94,7 @@ class control(Program):
           else:
             ret[split[0]] = None
 
+        log.debug(self, "Got response: %s" % (str(ret)))
         return ret
 
   # Sends a command to the neato.

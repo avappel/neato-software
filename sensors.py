@@ -66,7 +66,7 @@ class LDS:
   # Returns the rotation speed of the LDS sensor.
   def rotation_speed(self):
     return self.__get_scan()["ROTATION_SPEED"]
-
+  
 # A class for the analog sensors.
 class Analog:
   def __init__(self, program):
@@ -82,6 +82,13 @@ class Analog:
     right = int(info["RightDropInMM"])
     
     return (left, right)
+
+  # Returns the battery voltage.
+  def battery_voltage(self):
+    info = self.__get_sensors()
+    voltage = int(info["BatteryVoltageInmV"])
+
+    return voltage
 
 class Digital:
   def __init__(self, program):
