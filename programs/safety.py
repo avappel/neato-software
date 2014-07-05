@@ -27,7 +27,7 @@ class safety(Program):
       rate.rate(0.5)
       
       # Check that we're not about to drive off a drop.
-      left, right = analog.drop()
+      left, right = analog.drop(stale_time = 0)
       log.debug(self, "Drop sensor readings: %d, %d." % (left, right))
       if max(left, right) >= 80:
         log.info(self, "Detected drop, running drop handler.")
@@ -35,7 +35,7 @@ class safety(Program):
 
       # Disable the wheels if someone picked us up.
       if check_extended >= 2:
-        left, right = digital.wheels_extended()
+        left, right = digital.wheels_extended(stale_time = 0.5)
         if ((left or right) and not wheels_extended):
           log.info(self, "Wheels extended, disabling.")
           serial_api.freeze(self)

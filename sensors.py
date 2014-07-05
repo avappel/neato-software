@@ -72,20 +72,20 @@ class Analog:
   def __init__(self, program):
     self.program = program
 
-  def __get_sensors(self):
-    return control.get_output(self.program, "GetAnalogSensors")
+  def __get_sensors(self, **kwargs):
+    return control.get_output(self.program, "GetAnalogSensors", **kwargs)
 
   # Gets readings from the drop sensors.
-  def drop(self):
-    info = self.__get_sensors()
+  def drop(self, **kwargs):
+    info = self.__get_sensors(**kwargs)
     left = int(info["LeftDropInMM"])
     right = int(info["RightDropInMM"])
     
     return (left, right)
 
   # Returns the battery voltage.
-  def battery_voltage(self):
-    info = self.__get_sensors()
+  def battery_voltage(self, **kwargs):
+    info = self.__get_sensors(**kwargs)
     voltage = int(info["BatteryVoltageInmV"])
 
     return voltage
@@ -94,12 +94,12 @@ class Digital:
   def __init__(self, program):
     self.program = program
 
-  def __get_sensors(self):
-    return control.get_output(self.program, "GetDigitalSensors")
+  def __get_sensors(self, **kwargs):
+    return control.get_output(self.program, "GetDigitalSensors", **kwargs)
 
   # Returns whether or not the wheels are extended.
-  def wheels_extended(self):
-    info = self.__get_sensors()
+  def wheels_extended(self, **kwargs):
+    info = self.__get_sensors(**kwargs)
     left = bool(int(info["SNSR_LEFT_WHEEL_EXTENDED"]))
     right = bool(int(info["SNSR_RIGHT_WHEEL_EXTENDED"]))
     

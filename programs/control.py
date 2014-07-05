@@ -4,11 +4,55 @@ import sys
 sys.path.append("..")
 
 import serial
+import time
 
 from starter import Program
 
 import log
 import rate
+
+# A simple memmory cache.
+class Cache:
+  # Time in seconds before entries go stale.
+  stale_time = 10
+
+  def __init__(self):
+    # The actual cached data, indexed by command
+    self.data = {}
+    # Cached timestamps, indexed by command.
+    self.timestamps = {}
+    # We also save the names of programs that requests came from.
+    self.sources = {}
+
+  # If there is valid item, return it, otherwise, return None.
+  def get_item(self, command, source, stale_time = None):
+    if command not in self.data.keys():
+      return None
+
+    data_source = self.sources[command]
+    if data_source == source:
+      # If the same program is running the same command, it's probably because
+      # they want new data.
+      return None
+
+    data = self.data[command]
+
+    if stale_time == None:
+      stale = Cache.stale_time
+    else:
+      stale = stale_time
+    
+    timestamp = self.timestamps[command]
+    if time.time() - timestamp >= stale:
+      return None
+
+    return data
+
+  # Add a new item to the cache, or update an existing one.
+  def add(self, command, data, source):
+    self.data[command] = data
+    self.timestamps[command] = time.time()
+    self.sources[command] = source
 
 class control(Program):
   def setup(self):
@@ -19,38 +63,46 @@ class control(Program):
     # Enable test mode on the neato.
     self.serial.write("testmode on\n")
 
+    self.cache = Cache()
     freezing_program = None
 
     while True:
       # Check for commands from all our pipes.
       data = self.control.get()
-      source = data[0]
-      
-      if len(data) == 3:
+      source = data.Source
+  
+      # Freeze or unfreeze.
+      if (data.Command == "freeze" and not freezing_program):
+        log.info(self, "Freezing control program.")
+        freezing_program = source
+      elif (data.Command == "unfreeze" and pipe == freezing_pipe):
+        log.info(self, "Unfreezing control program.")
+        freezing_program = None
+
+      # Normal serial command.
+      else:
         if (not freezing_program or source == freezing_program):
-          # Normal command.
-          output = data[1]
-          command = data[2]
+          output = data.Output
+          command = data.Command
+          stale = data.Stale
           log.debug(self, "Command: %s" % (command))
 
           if output:
             # We need to send the output back.
-            data = self.__get_output(command)
+            result = self.cache.get_item(command, source, stale_time = stale)
+            if not result:
+              result = self.__get_output(command)
+              self.cache.add(command, result, source)
+            else:
+              log.debug(self, "Cache hit on %s." % \
+                  (command))
+
             pipe = getattr(self, source)
-            pipe.send(data)
+            pipe.send(result)
           else:
             # No need to send the output.
             self.__send_command(command)
       
-      else:
-        # Other command.
-        if (data[1] == "freeze" and not freezing_program):
-          log.info(self, "Freezing control program.")
-          freezing_program = source
-        elif (data[1] == "unfreeze" and pipe == freezing_pipe):
-          log.info(self, "Unfreezing control program.")
-          freezing_program = None
-
   # Gets results from a command on the neato.
   def __get_output(self, command):
     self.serial.flush()
