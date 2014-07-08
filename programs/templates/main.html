@@ -1,9 +1,20 @@
 <!DOCTYPE html>
 <html>
+
+<head>
+<link rel="stylesheet" type="text/css" href="static/main.css">
+</head>
+
 <body>
 
 <div id="header">
 <h4 style="float: right" id="voltage">Battery: --%</h4>
+</div>
+
+<div id="logs" style="float: left; height: 100%;">
+<canvas id="log_display" width="500" height="500"
+    style="border: 1px solid; height: 100%;">
+</canvas>
 </div>
 
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js">

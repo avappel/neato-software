@@ -3,6 +3,7 @@
 # Contains code for starting programs and coordinating them.
 
 from multiprocessing import Pipe, Process, Queue
+from Queue import Full
 
 import os
 import sys
@@ -59,13 +60,16 @@ class Program:
     self.feeds.append(queue)
 
   # Allows a subclass to write to a named feed.
-  def write_to_feed(self, name, message):
+  def write_to_feed(self, name, message, block = True):
     try:
       feed = self.write_feeds[name]
     except KeyError:
       raise ValueError("No feed with name '%s' exists." % (name))
 
-    feed.put(message)
+    try:
+      feed.put(message, block)
+    except Full:
+      raise RuntimeError("Write would block.")
 
   # Perform any necessary setup for this program.
   def setup(self):

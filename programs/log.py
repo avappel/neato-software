@@ -44,6 +44,15 @@ class log(Program):
     while True:
       if (not flush_pending or not self.logging.empty()):
         level, name, message = self.logging.get()
+
+        # Write it to the webserver, if it is running.
+        try:
+          if level != "DEBUG":
+            self.write_to_feed("web_logging", (level, name, message), False)
+        except (RuntimeError, ValueError):
+          # It's not critical that we write it.
+          pass
+
         root.write(level, name, message)
         flush_pending = True
 
