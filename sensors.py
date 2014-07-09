@@ -90,6 +90,13 @@ class Analog:
 
     return voltage
 
+  # Return the charging voltage.
+  def charging(self, **kwargs):
+    info = self.__get_sensors(**kwargs)
+    voltage = int(info["ChargeVoltInmV"])
+
+    return voltage
+
 class Digital:
   def __init__(self, program):
     self.program = program

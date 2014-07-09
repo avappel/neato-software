@@ -27,7 +27,14 @@ def main():
 def battery():
   voltage = web_interface.analog.battery_voltage(stale_time = 60)
   percentage = voltage / 16000 * 100
+  percentage = min(percentage, 100)
   return str(percentage)
+
+# Determine whether we are charging or not.
+@app.route("/charging/")
+def charging():
+  voltage = web_interface.analog.charging(stale_time = 20)
+  return str(int(bool(voltage)))
 
 # Get the latest logging messages. (JSON formatted.)
 @app.route("/logging/")

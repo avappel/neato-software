@@ -1,10 +1,12 @@
 function main() {
   // Get initial data.
   updateBattery();
+  updateCharging();
 
   logging = new Logging();
 
   setInterval(updateBattery, 10000);
+  setInterval(updateCharging, 10000);
   setInterval(function() {
     logging.update();
   }, 1000);
@@ -152,6 +154,18 @@ function updateBattery() {
       $("#voltage").css("color", "red");
     }
   });
+}
+
+function updateCharging() {
+  $.get("charging", function(data) {
+    if (Number(data)) {
+      $("#charging").text("Charging");
+      $("#charging").css("color", "green");
+    } else {
+      $("#charging").text("Not Charging");
+      $("#charging").css("color", "red");
+    }
+  }); 
 }
 
 function Logging() {
