@@ -3,11 +3,11 @@
 # Implements a web interface for the robot.
 
 from __future__ import division
-
-import sys
-sys.path.append("..")
+from Queue import Empty
 
 import json
+import sys
+sys.path.append("..")
 
 from flask import Flask
 from flask import render_template
@@ -49,8 +49,11 @@ def charging():
 def logging():
   # Get all the most recent messages.
   messages = []
-  while not web_interface.root.web_logging.empty():
-    messages.append(web_interface.root.web_logging.get(False))
+  while True:
+    try:
+      messages.append(web_interface.root.web_logging.get(False))
+    except Empty:
+      break
 
   return json.dumps(messages)
 
@@ -70,6 +73,6 @@ class web_interface(Program):
   def run(self):
     web_interface.root = self
 
-    app.debug = True
+    #app.debug = True
     # The flask auto-reloader doesn't work well with multiprocessing.
     app.run(host = "0.0.0.0", use_reloader = False)

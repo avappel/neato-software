@@ -118,7 +118,7 @@ function LogDisplayer() {
   // The canvas we are drawing on.
   this.context = document.getElementById("log_display").getContext("2d");
   // Set correct canvas size.
-  this.height = $(window).height();
+  this.height = $(window).height() - 100;
   this.context.canvas.height = this.height;
 
   this.clear = function() {

@@ -75,7 +75,7 @@ class control(Program):
       if (data.Command == "freeze" and not freezing_program):
         log.info(self, "Freezing control program.")
         freezing_program = source
-      elif (data.Command == "unfreeze" and pipe == freezing_pipe):
+      elif (data.Command == "unfreeze" and source == freezing_program):
         log.info(self, "Unfreezing control program.")
         freezing_program = None
 

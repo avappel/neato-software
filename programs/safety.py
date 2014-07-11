@@ -22,34 +22,31 @@ class safety(Program):
     digital = sensors.Digital(self)
     check_extended = 1
     wheels_extended = False
+    check_drop = True
     
     while True:
       rate.rate(0.5)
-      
+     
       # Check that we're not about to drive off a drop.
-      left, right = analog.drop(stale_time = 0)
-      log.debug(self, "Drop sensor readings: %d, %d." % (left, right))
-      if max(left, right) >= 80:
+      left_drop, right_drop = analog.drop(stale_time = 0)
+      log.debug(self, "Drop sensor readings: %d, %d." % (left_drop, right_drop))
+      
+      # Disable the wheels if someone picked us up.
+      left, right = digital.wheels_extended(stale_time = 0.5)
+      if ((left or right) and not wheels_extended):
+        log.info(self, "Wheels extended, disabling.")
+        serial_api.freeze(self)
+        self.wheels.disable()
+        wheels_extended = True
+      elif ((not (left or right)) and wheels_extended):
+        log.info(self, "Wheels not extended, enabling.")
+        self.wheels.enable()
+        serial_api.unfreeze(self)
+        wheels_extended = False
+      elif (max(left_drop, right_drop) >= 80 and not wheels_extended):
         log.info(self, "Detected drop, running drop handler.")
         self.__drop_handler()
-
-      # Disable the wheels if someone picked us up.
-      if check_extended >= 2:
-        left, right = digital.wheels_extended(stale_time = 0.5)
-        if ((left or right) and not wheels_extended):
-          log.info(self, "Wheels extended, disabling.")
-          serial_api.freeze(self)
-          self.wheels.disable()
-          wheels_extended = True
-        elif ((not (left or right)) and wheels_extended):
-          log.info(self, "Wheels not extended, enabling.")
-          self.wheels.enable()
-          serial_api.unfreeze(self)
-          wheels.extended = False
-          
-        check_extended = 0
-      check_extended += 1
-
+            
   # Handles a detected drop.
   def __drop_handler(self):
     # Freeze the control program.
