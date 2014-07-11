@@ -1,4 +1,5 @@
 import sys
+import time
 sys.path.append("..")
 
 from starter import Program
@@ -12,6 +13,7 @@ class neato_test(Program):
 
   def run(self):
     #l = sensors.LDS(self)
+    time.sleep(10)
     wheels = motors.Wheels(self)
     wheels.safe_drive(-500, -500, 200)
     #wheels.safe_drive(300, -300, 50)

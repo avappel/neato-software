@@ -105,6 +105,7 @@ class Wheels:
 
       # Stop the motors if we have to.
       if (len(danger) and not paused):
+        log.warning(self.program, "Stopping due to obstacle.")
         self.stop()
         paused = True
       if (not len(danger) and paused):

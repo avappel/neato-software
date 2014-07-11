@@ -14,7 +14,7 @@ import rate
 # A simple memmory cache.
 class Cache:
   # Time in seconds before entries go stale.
-  stale_time = 10
+  stale_time = 5
 
   def __init__(self):
     # The actual cached data, indexed by command

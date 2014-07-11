@@ -8,10 +8,9 @@ import rate
 
 # Represents LDS sensor, and allows user to control it.
 class LDS:
-  spun_up = False
-
   def __init__(self, program):
     self.program = program
+    self.ready = False
 
     control.send_command(self.program, "SetLDSRotation on")
   
@@ -21,18 +20,20 @@ class LDS:
 
   # Wait for sensor to spin up.
   def __spin_up(self):
-    log.debug(self.program, "Waiting for LDS spinup.")
-    if not LDS.spun_up:
-      # Wait for a valid packet.
-      while True:
-        rate.rate(0.01)
+    if not self.ready:
+      log.info(self.program, "Waiting for LDS spinup.")
+      if not self.is_active(self.program):
+        # Wait for a valid packet.
+        while True:
+          rate.rate(0.01)
 
-        scan = self.__get_scan()
-        if len(scan.keys()) > 1:
-          break
-      
-      LDS.spun_up = True
-    log.debug(self.program, "LDS ready.")
+          scan = self.__get_scan()
+          if len(scan.keys()) > 1:
+            break
+        
+        self.ready = True
+        
+      log.info(self.program, "LDS ready.")
 
   # Helper to get and parse a complete scan packet.
   def __get_scan(self):
@@ -63,8 +64,18 @@ class LDS:
 
     return self.__get_scan()
 
+  @staticmethod
+  # Returns whether lds is active and ready to transmit data.
+  def is_active(program):
+    info = control.get_output(program, "GetMotors")
+    mvolts = int(info["Laser_mVolts"])
+    return bool(mvolts)
+
   # Returns the rotation speed of the LDS sensor.
   def rotation_speed(self):
+    if not self.is_active(self.program):
+      return 0
+
     return self.__get_scan()["ROTATION_SPEED"]
   
 # A class for the analog sensors.

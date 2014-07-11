@@ -25,7 +25,8 @@ def main():
 # Get battery percentage.
 @app.route("/battery/")
 def battery():
-  voltage = web_interface.analog.battery_voltage(stale_time = 60)
+  analog = sensors.Analog(web_interface.root)
+  voltage = analog.battery_voltage(stale_time = 60)
   percentage = voltage / 16000 * 100
   percentage = min(percentage, 100)
   return str(percentage)
@@ -33,7 +34,8 @@ def battery():
 # Determine whether we are charging or not.
 @app.route("/charging/")
 def charging():
-  voltage = web_interface.analog.charging(stale_time = 20)
+  analog = sensors.Analog(web_interface.root)
+  voltage = analog.charging(stale_time = 20)
 
   if int(voltage <= 20000):
     charging = 0
@@ -47,23 +49,26 @@ def charging():
 def logging():
   # Get all the most recent messages.
   messages = []
-  while not web_interface.logging.empty():
-    messages.append(web_interface.logging.get(False))
+  while not web_interface.root.web_logging.empty():
+    messages.append(web_interface.root.web_logging.get(False))
 
   return json.dumps(messages)
 
+# Determine whether lidar is active.
+@app.route("/lds_active/")
+def lds_active():
+  return str(int(sensors.LDS.is_active(web_interface.root))) 
+
 class web_interface(Program):
-  # These get used by the route handlers.
-  analog = None
-  logging = None
+  # The root instance of this class.
+  root = None
 
   def setup(self):
     self.add_pipe("control")
     self.add_feed("web_logging")
 
   def run(self):
-    web_interface.analog = sensors.Analog(self)
-    web_interface.logging = self.web_logging
+    web_interface.root = self
 
     app.debug = True
     # The flask auto-reloader doesn't work well with multiprocessing.

@@ -4,6 +4,7 @@ function main() {
   updateCharging();
 
   logging = new Logging();
+  lidar = new LidarDisplayer();
 
   setInterval(updateBattery, 10000);
   setInterval(updateCharging, 10000);
@@ -12,6 +13,7 @@ function main() {
   }, 1000);
 }
 
+other = false;
 // A helper class for creating persistent log text.
 function LogText(context, text, color, y) {
   this.context = context;
@@ -23,52 +25,87 @@ function LogText(context, text, color, y) {
   this.height = this.context.canvas.height;
   // Keeps track of the current bounding box around text.
   var half_size = this.size / 2;
-  this.bounding_box = [0, y + half_size, 500, y - half_size];
+  this.bounding_box = [0, y, 500, y + this.size];
 
-  this.__redraw = function() {
-    this.clear();
-
+  this.__draw = function() {
     this.context.font = this.size + "px Arial";
     this.context.fillStyle = color;
     this.context.textAlign = "left";
+    this.context.textBaseline = "top";
     this.context.fillText(this.text, 0, this.y);
   };
 
   this.clear = function() {
+    if (other) {
+      this.context.fillStyle = "FF0000";
+      other = false;
+    } else {
+      this.context.fillStyle = "000000";
+      other = true;
+    }
     this.context.clearRect.apply(this.context, this.bounding_box);
-  } 
+  }; 
 
   // Change the text.
   this.setText = function(text) {
     this.text = text;
-    this.__redraw();
+    this.clear();
+    this.__draw();
   };
 
   // Change the font.
   this.setFont = function(font) {
     this.context.font = font;
-    this.__redraw();
+    this.clear();
+    this.__draw();
   };
 
   // Change the color.
   this.setColor = function(color) {
     this.color = color;
-    this.__redraw();
+    this.clear();
+    this.__draw();
   }
 
   // Shifts the Y position of the text.
-  this.move = function(y_ammount) {
+  this.move = function(y_amount) {
     // Do this before we change the bounding box.
     this.clear();
 
-    this.bounding_box[1] += y_ammount;
-    this.bounding_box[3] += y_ammount;
-    this.y += y_ammount;
+    this.bounding_box[1] += y_amount;
+    this.bounding_box[3] += y_amount;
+    this.y += y_amount;
 
-    this.__redraw();
+    this.__draw();
   };
 
-  this.__redraw();
+  this.__draw();
+}
+
+// Class for handling the LIDAR widget.
+function LidarDisplayer() {
+  // The context we are drawing with.
+  this.context = document.getElementById("lidar_display").getContext("2d");
+
+  this.inactive = function() {
+    this.context.clearRect(0, 0, 500, 500);
+
+    this.context.font = "30px Arial";
+    this.context.fillStyle = "#990000";
+    this.context.textAlign = "center";
+    this.context.fillText("LIDAR not active.", 250, 234);
+
+    this.context.font = "16px Arial"
+    this.context.fillStyle = "#5E5E3A";
+    this.context.fillText("Click here to turn it on.", 250, 259);
+  }
+
+  var instance = this;
+  $.get("lds_active", function(data) {
+    if (!Number(data)) {
+      instance.inactive();
+    }
+  });
 }
 
 // Class for handling the log widget.
@@ -85,7 +122,7 @@ function LogDisplayer() {
   this.context.canvas.height = this.height;
 
   this.clear = function() {
-    this.context.clearRect(0, 0, 500, 500);
+    this.context.clearRect(0, 0, 500, this.height);
 
     this.context.font = "30px Arial";
     this.context.fillStyle = "#A3A375";
@@ -111,9 +148,9 @@ function LogDisplayer() {
     var to_delete = 0;
     for (var i = 0; i < this.showing.length; ++i) {
       var value = this.showing[i];
-      
-      if (value.y <= 2) {
-        value.erase();
+     
+      if (value.y <= 15) {
+        value.clear();
         ++to_delete;
       } else {
         value.move(-18);
@@ -137,7 +174,7 @@ function LogDisplayer() {
 
     // Add the new message.
     this.showing.push(new LogText(this.context, formatted,
-        color, this.height - 9));
+        color, this.height - 24));
   };
 
   this.clear();
