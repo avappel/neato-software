@@ -7,16 +7,20 @@
 
 <body>
 
-<div id="header">
-  <div style="float: right">
-    <h4 id="voltage" style="display: inline">Battery: --%</h4>
+<div id="main-header">
+  <div class="transparent_overlay_box header">
+    <h4 id="voltage" style="display: inline;">Battery: --%</h4>
     <h4 id="charging" style="display: inline; padding-left: 2em;"></h4>
   </div>
 </div>
 
 <div id="logs" style="float: left">
-<canvas id="log_display" width="500" height="500"
-    style="border: 1px solid">
+<canvas id="log_display" class="rounded_canvas" width="500" height="500">
+</canvas>
+</div>
+
+<div id="lidar" style="float: left; margin-left: 20px;">
+<canvas id="lidar_display" class="rounded_canvas" width="500" height="500">
 </canvas>
 </div>
 

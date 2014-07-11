@@ -4,4 +4,25 @@ html {
 
 body {
   height: 100%;
+  margin-right: 20px;
+  margin-left: 20px
+}
+
+canvas.rounded_canvas {
+  background: #fff;
+  border: 1px solid #aaa;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.transparent_overlay_box {
+  background: rgba(0,0,0,.5);
+  border-radius: 2px;
+  padding: 20px;
+  color: #ccc;
+}
+
+.header {
+  clear: both;
+  margin-bottom: 20px;
 }

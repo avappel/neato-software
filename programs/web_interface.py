@@ -34,7 +34,13 @@ def battery():
 @app.route("/charging/")
 def charging():
   voltage = web_interface.analog.charging(stale_time = 20)
-  return str(int(bool(voltage)))
+
+  if int(voltage <= 20000):
+    charging = 0
+  else:
+    charging = 1
+
+  return str(charging)
 
 # Get the latest logging messages. (JSON formatted.)
 @app.route("/logging/")
