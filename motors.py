@@ -2,10 +2,11 @@
 
 import time
 
+from programs import log
 from sensors import LDS
-import serial_api as control
 
 import rate
+import serial_api as control
 
 class Wheels:
   enabled = False
@@ -20,9 +21,9 @@ class Wheels:
 
   # Waits for motors to be stopped.
   def __wait_for_stop(self):
-    while self.get_wheel_rpms()[0] != 0:
+    while self.get_wheel_rpms(stale_time = 0)[0] != 0:
       time.sleep(0.01)
-    while self.get_wheel_rpms()[1] != 0:
+    while self.get_wheel_rpms(stale_time = 0)[1] != 0:
       time.sleep(0.01)
 
   # Enables both drive motors.
@@ -49,7 +50,7 @@ class Wheels:
     paused = True
     watching = {}
     danger = []
-    initial_distance = self.get_distance()
+    initial_distance = self.get_distance(stale_time = 0)
     
     while True:
       # Even at max speed, it will take at least this long for anything to
@@ -58,8 +59,9 @@ class Wheels:
 
       # Check if we're done.
       if not paused:
-        rpms = self.get_wheel_rpms()
+        rpms = self.get_wheel_rpms(stale_time = 0)
         if max(rpms[0], rpms[1]) == 0:
+          log.info(self.program, "Safe drive: Exiting loop.")
           break
 
       # Get newest data from LDS.
@@ -111,6 +113,8 @@ class Wheels:
         right_distance = new_distance[1] - initial_distance[1]
         left_to_go = left_dist - left_distance
         right_to_go = right_dist - right_distance
+        log.info(self.program, "Safe drive: SetMotors %d %d %d" % \
+            (left_to_go, right_to_go, speed))
         self.drive(left_to_go, right_to_go, speed, block = False)
 
         paused = False
@@ -127,15 +131,15 @@ class Wheels:
     control.send_command(self.program, "SetMotor -1 -1 300")
 
   # Get RPMs of wheel motors.
-  def get_wheel_rpms(self):
-    info = control.get_output(self.program, "GetMotors")
+  def get_wheel_rpms(self, **kwargs):
+    info = control.get_output(self.program, "GetMotors", **kwargs)
     left = int(info["LeftWheel_RPM"])
     right = int(info["RightWheel_RPM"])
     return (left, right)
   
   # Get the distance traveled by each wheel.
-  def get_distance(self):
-    info = control.get_output(self.program, "GetMotors")
+  def get_distance(self, **kwargs):
+    info = control.get_output(self.program, "GetMotors", **kwargs)
     left = int(info["LeftWheel_PositionInMM"])
     right = int(info["RightWheel_PositionInMM"])
     return (left, right)
