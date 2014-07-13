@@ -31,7 +31,7 @@ class LDS:
           if len(scan.keys()) > 1:
             break
         
-        self.ready = True
+      self.ready = True
         
       log.info(self.program, "LDS ready.")
 
@@ -62,7 +62,9 @@ class LDS:
     # Make sure sensor is ready.
     self.__spin_up()
 
-    return self.__get_scan()
+    packet = self.__get_scan()
+    packet.pop("ROTATION_SPEED", None);
+    return packet
 
   @staticmethod
   # Returns whether lds is active and ready to transmit data.

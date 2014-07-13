@@ -11,6 +11,7 @@ sys.path.append("..")
 
 from flask import Flask
 from flask import render_template
+from flask import request
 from starter import Program
 
 import log
@@ -58,9 +59,21 @@ def logging():
   return json.dumps(messages)
 
 # Determine whether lidar is active.
-@app.route("/lds_active/")
+@app.route("/lds_active/", methods = ["GET", "POST"])
 def lds_active():
-  return str(int(sensors.LDS.is_active(web_interface.root))) 
+  if request.method == "GET":
+    return str(int(sensors.LDS.is_active(web_interface.root)))
+  else:
+    # Activate the LIDAR.
+    if not web_interface.root.lds:
+      web_interface.root.lds = sensors.LDS(web_interface.root)
+    return str(1)
+
+# Get a packet from the lidar.
+@app.route("/lds/")
+def lds():
+  packet = web_interface.root.lds.get_scan()
+  return json.dumps(packet)
 
 class web_interface(Program):
   # The root instance of this class.
@@ -72,7 +85,8 @@ class web_interface(Program):
 
   def run(self):
     web_interface.root = self
+    self.lds = None
 
-    #app.debug = True
+    app.debug = True
     # The flask auto-reloader doesn't work well with multiprocessing.
     app.run(host = "0.0.0.0", use_reloader = False)

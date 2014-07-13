@@ -11,6 +11,9 @@ function main() {
   setInterval(function() {
     logging.update();
   }, 1000);
+  setInterval(function() {
+    lidar.update();
+  }, 2000);
 }
 
 other = false;
@@ -86,6 +89,64 @@ function LogText(context, text, color, y) {
 function LidarDisplayer() {
   // The context we are drawing with.
   this.context = document.getElementById("lidar_display").getContext("2d");
+  this.has_click = false;
+  this.is_active = false;
+
+  // Shows a single point.
+  this.__show_dot = function(angle, distance) {
+    // Calculate x and y coordinates. This is basically just converting polar to
+    // cartesian.
+    var rads = angle * Math.PI / 180;
+    var x = distance * Math.cos(rads);
+    var y = distance * Math.sin(rads);
+
+    // Map these to the upside-down first quadrant.
+    x += 250;
+    y += 250;
+    y = 500 - y;
+
+    // Draw a circle.
+    this.context.beginPath();
+    this.context.arc(x, y, 5, 0, 2 * Math.PI);
+    this.context.fillStyle = "#1947D1";
+    this.context.fill();
+  };
+
+  // Displays a packet.
+  this.__show_packet = function(data) {
+    // Clear display.
+    this.context.clearRect(0, 0, 500, 500);
+
+    var packet = JSON.parse(data);
+    var factor = 1;
+
+    // Normalize distances for our display.
+    var biggest = 0;
+    for (i = 0; i < Object.keys(packet).length; ++i) {
+      var line = packet[String(i)]; 
+      if (line) {
+        var distance = Number(line[0]);
+        biggest = Math.max(biggest, distance);
+      }
+    }
+    
+    factor = 250 / parseFloat(biggest);
+
+    // Draw a dot for each reading.
+    for (i = 0; i < Object.keys(packet).length; ++i) {
+      var line = packet[String(i)];
+      if (line) {
+        var distance = Number(line[0]) * factor;
+        this.__show_dot(i, distance);
+      }
+    }
+
+    // Draw scale indicator.
+    var scale = biggest * 2;
+    this.context.fillStyle = "#000000";
+    this.context.font = "16px Arial";
+    this.context.fillText("Width = " + scale + " mm", 250, 488);
+  };
 
   this.inactive = function() {
     this.context.clearRect(0, 0, 500, 500);
@@ -98,14 +159,50 @@ function LidarDisplayer() {
     this.context.font = "16px Arial"
     this.context.fillStyle = "#5E5E3A";
     this.context.fillText("Click here to turn it on.", 250, 259);
-  }
+  };
 
-  var instance = this;
-  $.get("lds_active", function(data) {
-    if (!Number(data)) {
-      instance.inactive();
+  this.update = function() {
+    console.log("updating");
+    if (this.is_active) {
+      // Get the latest data from the LDS.
+      if (this.has_click) {
+        $("#lidar_display").off("click");
+      }
+
+      console.log("Getting packet.");
+      // Get the packet.
+      var instance = this;
+      $.get("lds/", function(data) {
+        instance.__show_packet(data);
+      });
+
+    } else {
+      // Set up click event.
+      if (!this.has_click) {
+        $("#lidar_display").click(function() {
+          $.post("lds_active/", function(data) {});
+        });
+        this.has_click = true;
+      }
     }
-  });
+
+    this.check_active();
+  };
+
+  // Check if LDS is active.
+  this.check_active = function() {
+    var instance = this;
+    $.get("lds_active/", function(data) {
+      if (!Number(data)) {
+        instance.inactive();
+        instance.is_active = false;
+      } else {
+        instance.is_active = true;
+      }
+    });
+  };
+
+  this.check_active();
 }
 
 // Class for handling the log widget.

@@ -66,7 +66,6 @@ class Wheels:
 
       # Get newest data from LDS.
       packet = lds.get_scan()
-      packet.pop("ROTATION_SPEED", None)
       
       # Anything fewer than a certain distance away we want to watch.
       watch_distance = 450
