@@ -5,6 +5,7 @@ function main() {
 
   logging = new Logging();
   lidar = new LidarDisplayer();
+  movement = new Movement();
 
   setInterval(updateBattery, 10000);
   setInterval(updateCharging, 10000);
@@ -16,7 +17,58 @@ function main() {
   }, 2000);
 }
 
-other = false;
+// A class for handling movement control.
+function Movement() {
+  this.enabled = false;
+
+  // Handles key presses.
+  this.handleKeys = function(evn) {
+    if (this.enabled) {
+      if (evn.which === 38) {
+        $.post("drive_forward/", function() {});
+        return false;
+      } else if (evn.which === 40) {
+        $.post("drive_backward/", function() {});
+        return false;
+      }
+    }
+  };
+
+  // Handles key release.
+  this.handleStop = function() {
+    if (this.enabled) {
+      $.post("stop/", function() {});
+      return false;
+    }
+  };
+
+  this.toggleEnabled = function() {
+    if (!this.enabled) {
+      $("#enable_rc").text("Click here to disable RC.");
+      $("#enable_rc").css("color", "#D11919");
+      this.enabled = true;
+    } else {
+      $("#enable_rc").text("Click here to enable RC.");
+      $("#enable_rc").css("color", "#009933");
+      this.enabled = false;
+    }
+  };
+
+  var instance = this;
+  $("#enable_rc").click(function() {
+    instance.toggleEnabled();
+  });
+
+  // Set up key bindings.
+  var instance = this;
+  $(document).keydown(function(evn) {
+    instance.handleKeys(evn);
+  });
+  $(document).keyup(function() {
+    instance.handleStop();
+  });
+}
+
 // A helper class for creating persistent log text.
 function LogText(context, text, color, y) {
   this.context = context;
@@ -39,13 +91,6 @@ function LogText(context, text, color, y) {
   };
 
   this.clear = function() {
-    if (other) {
-      this.context.fillStyle = "FF0000";
-      other = false;
-    } else {
-      this.context.fillStyle = "000000";
-      other = true;
-    }
     this.context.clearRect.apply(this.context, this.bounding_box);
   }; 
 
@@ -145,6 +190,7 @@ function LidarDisplayer() {
     var scale = biggest * 2;
     this.context.fillStyle = "#000000";
     this.context.font = "16px Arial";
+    this.context.textAlign = "center";
     this.context.fillText("Width = " + scale + " mm", 250, 488);
   };
 
@@ -162,14 +208,12 @@ function LidarDisplayer() {
   };
 
   this.update = function() {
-    console.log("updating");
     if (this.is_active) {
       // Get the latest data from the LDS.
       if (this.has_click) {
         $("#lidar_display").off("click");
       }
 
-      console.log("Getting packet.");
       // Get the packet.
       var instance = this;
       $.get("lds/", function(data) {
@@ -304,18 +348,25 @@ function updateCharging() {
 
 function Logging() {
   this.displayer = new LogDisplayer();
+  // Keeps track of whether an ajax request is already running.
+  this.ajax_pending = false;
 
   this.update = function() {
-    var displayer = this.displayer;
+    var instance = this;
 
-    $.get("logging", function(data) {
-      var messages = JSON.parse(data);
+    if (!this.ajax_pending) {
+      $.get("logging", function(data) {
+        instance.ajax_pending = false;
 
-      // Show the messages.
-      for (var i = 0; i < messages.length; ++i) {
-        displayer.addMessage(messages[i]);
-      }
-    });
+        var messages = JSON.parse(data);
+
+        // Show the messages.
+        for (var i = 0; i < messages.length; ++i) {
+          instance.displayer.addMessage(messages[i]);
+        }
+      });
+    }
+    this.ajax_pending = true;
   };
 }
 

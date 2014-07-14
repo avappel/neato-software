@@ -14,6 +14,7 @@ from flask import render_template
 from flask import request
 from starter import Program
 
+import continuous_driving
 import motors
 import log
 import sensors
@@ -82,19 +83,25 @@ def lds():
 # Instruct robot to drive forward.
 @app.route("/drive_forward/", methods = ["POST"])
 def drive_forward():
-  # Activate wheels.
-  if not web_interface.root.wheels:
-    web_interface.root.wheels = motors.Wheels(web_interface.root);
-
   # Drive forward.
-  web_interface.root.wheels.drive(100, 100, 300)
+  if not web_interface.root.is_driving:
+    continuous_driving.drive(web_interface.root, 1, 1, 100)
+    web_interface.root.is_driving = True
+  return str(1)
+
+@app.route("/drive_backward/", methods = ["POST"])
+def drive_backward():
+  # Drive backward.
+  if not web_interface.root.is_driving:
+    continuous_driving.drive(web_interface.root, -1, -1, 100)
+    web_interface.root.is_driving = True
   return str(1)
 
 @app.route("/stop/", methods = ["POST"])
 def stop():
-  if web_interface.root.wheels:
-    web_interface.root.wheels.stop()
-
+  # Stop moving.
+  continuous_driving.stop(web_interface.root)
+  web_interface.root.is_driving = False
   return str(1)
 
 class web_interface(Program):
@@ -108,7 +115,7 @@ class web_interface(Program):
   def run(self):
     web_interface.root = self
     self.lds = None
-    self.wheels = None
+    self.is_driving = False
 
     app.debug = True
     # The flask auto-reloader doesn't work well with multiprocessing.

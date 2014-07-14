@@ -15,6 +15,12 @@ canvas.rounded_canvas {
   overflow: hidden;
 }
 
+div.rounded_div {
+  border: 1px solid #7A7A52;
+  border-radius: 10px;
+  background: rgba(0,0,0,.1);
+}
+
 .transparent_overlay_box {
   background: rgba(0,0,0,.5);
   border-radius: 2px;
