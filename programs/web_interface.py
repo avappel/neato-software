@@ -14,6 +14,7 @@ from flask import render_template
 from flask import request
 from starter import Program
 
+import motors
 import log
 import sensors
 
@@ -72,8 +73,29 @@ def lds_active():
 # Get a packet from the lidar.
 @app.route("/lds/")
 def lds():
-  packet = web_interface.root.lds.get_scan()
+  if web_interface.root.lds:
+    packet = web_interface.root.lds.get_scan()
+  else:
+    packet = {}
   return json.dumps(packet)
+
+# Instruct robot to drive forward.
+@app.route("/drive_forward/", methods = ["POST"])
+def drive_forward():
+  # Activate wheels.
+  if not web_interface.root.wheels:
+    web_interface.root.wheels = motors.Wheels(web_interface.root);
+
+  # Drive forward.
+  web_interface.root.wheels.drive(100, 100, 300)
+  return str(1)
+
+@app.route("/stop/", methods = ["POST"])
+def stop():
+  if web_interface.root.wheels:
+    web_interface.root.wheels.stop()
+
+  return str(1)
 
 class web_interface(Program):
   # The root instance of this class.
@@ -86,6 +108,7 @@ class web_interface(Program):
   def run(self):
     web_interface.root = self
     self.lds = None
+    self.wheels = None
 
     app.debug = True
     # The flask auto-reloader doesn't work well with multiprocessing.

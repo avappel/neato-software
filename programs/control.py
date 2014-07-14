@@ -59,21 +59,26 @@ class control(Program):
     self.add_feed("control")
 
   def run(self):
-    self.serial = serial.Serial(port = "/dev/ttyACM0")
+    self.serial = serial.Serial(port = "/dev/ttyACM0", timeout = 1)
     # Enable test mode on the neato.
     self.serial.write("testmode on\n")
 
     self.cache = Cache()
     freezing_program = None
+    deffered_commands = []
 
     while True:
       # Check for commands from all our pipes.
-      data = self.control.get()
+      if (not freezing_program and deffered_commands):
+        data = deffered_commands.pop(0)
+        log.debug(self, "Running deffered command.")
+      else:
+        data = self.control.get()
       source = data.Source
   
       # Freeze or unfreeze.
       if (data.Command == "freeze" and not freezing_program):
-        log.info(self, "Freezing control program.")
+        log.info(self, "%s is freezing control program." % (source))
         freezing_program = source
       elif (data.Command == "unfreeze" and source == freezing_program):
         log.info(self, "Unfreezing control program.")
@@ -102,24 +107,49 @@ class control(Program):
           else:
             # No need to send the output.
             self.__send_command(command)
+        else:
+          # We'll run this one later.
+          log.debug(self, "Deffering command: %s" % (data.Command))
+          deffered_commands.append(data)
       
   # Gets results from a command on the neato.
   def __get_output(self, command):
     self.serial.flush()
-    self.__send_command(command)
+    self.__write_command(command)
 
     response = ""
     start = False
     while True:
-      try:
-        data = self.serial.read(self.serial.inWaiting())
-      except (OSError, serial.SerialException):
-        # No data to read.
-        log.warning(self, "Got no serial data. Retrying...")
-        continue
+      if self.serial.inWaiting():
+        read = self.serial.inWaiting()
+      elif not start:
+        # We want to read at least the command.
+        read = len(command)
+      else:
+        read = 1
+
+      data = ""
+      while len(data) < read:
+        try:
+          data += self.serial.read(read)
+        except (OSError, serial.SerialException):
+          # No data to read.
+          log.warning(self, "Got no serial data. Retrying...")
+          continue
 
       if start:
         response += data
+
+        if response == "":
+          # Timeout triggered and we still got no data.
+          log.warning(self, "Neato doesn't seem to want to respond.")
+
+          # Resend command.
+          self.__send_command(command)
+          response = ""
+          start = False
+
+          continue
 
       if command in data:
         # Remove everything up to the command.
@@ -130,15 +160,19 @@ class control(Program):
 
       # All responses end with this character.
       if (response != "" and response[-1] == ""):
-        # Get rid of end character and newline.
-        response = response[:-2]
+        # Get rid of end character.
+        response = response[:-1]
 
         # All responses are CSVs, so we can turn them into a nice little dict.
         lines = response.split("\n")
+
         ret = {}
         for line in lines:
           line = line.rstrip("\r")
           split = line.split(",")
+          if split[0] == "":
+            continue
+
           if len(split) > 2:
             ret[split[0]] = split[1:]
           elif len(split) == 2:
@@ -149,6 +183,17 @@ class control(Program):
         log.debug(self, "Got response: %s" % (str(ret)))
         return ret
 
+  def __write_command(self, command):
+    self.serial.write(command + "\n")
+
   # Sends a command to the neato.
   def __send_command(self, command):
-    self.serial.write(command + "\n")
+    self.__write_command(command)
+    self.serial.flush()
+
+    # Wait for end character.
+    response = ""
+    while True:
+      response += self.serial.read(len(command) + 2)
+      if response[-1] == "":
+        break

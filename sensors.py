@@ -119,8 +119,13 @@ class Digital:
 
   # Returns whether or not the wheels are extended.
   def wheels_extended(self, **kwargs):
-    info = self.__get_sensors(**kwargs)
-    left = bool(int(info["SNSR_LEFT_WHEEL_EXTENDED"]))
-    right = bool(int(info["SNSR_RIGHT_WHEEL_EXTENDED"]))
+    while True:
+      info = self.__get_sensors(**kwargs)
+      try:
+        left = bool(int(info["SNSR_LEFT_WHEEL_EXTENDED"]))
+        right = bool(int(info["SNSR_RIGHT_WHEEL_EXTENDED"]))
+        break
+      except KeyError:
+        continue
     
     return (left, right)
