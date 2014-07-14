@@ -20,17 +20,26 @@ function main() {
 // A class for handling movement control.
 function Movement() {
   this.enabled = false;
+  this.driving = false;
 
   // Handles key presses.
   this.handleKeys = function(evn) {
-    if (this.enabled) {
+    if (this.enabled && !this.driving) {
       if (evn.which === 38) {
         $.post("drive_forward/", function() {});
-        return false;
+        this.driving = true;
       } else if (evn.which === 40) {
         $.post("drive_backward/", function() {});
-        return false;
+        this.driving = true;
+      } else if (evn.which === 37) {
+        $.post("turn_left/", function() {});
+        this.driving = true;
+      } else if (evn.which === 39) {
+        $.post("turn_right/", function() {});
+        this.driving = true;
       }
+
+      return false;
     }
   };
 
@@ -38,6 +47,7 @@ function Movement() {
   this.handleStop = function() {
     if (this.enabled) {
       $.post("stop/", function() {});
+      this.driving = false;
       return false;
     }
   };

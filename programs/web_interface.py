@@ -84,24 +84,29 @@ def lds():
 @app.route("/drive_forward/", methods = ["POST"])
 def drive_forward():
   # Drive forward.
-  if not web_interface.root.is_driving:
-    continuous_driving.drive(web_interface.root, 1, 1, 100)
-    web_interface.root.is_driving = True
+  continuous_driving.drive(web_interface.root, 1, 1, 300)
   return str(1)
 
 @app.route("/drive_backward/", methods = ["POST"])
 def drive_backward():
   # Drive backward.
-  if not web_interface.root.is_driving:
-    continuous_driving.drive(web_interface.root, -1, -1, 100)
-    web_interface.root.is_driving = True
+  continuous_driving.drive(web_interface.root, -1, -1, 300)
+  return str(1)
+
+@app.route("/turn_left/", methods = ["POST"])
+def turn_left():
+  continuous_driving.drive(web_interface.root, -1, 1, 100)
+  return str(1)
+
+@app.route("/turn_right/", methods = ["POST"])
+def turn_right():
+  continuous_driving.drive(web_interface.root, 1, -1, 100)
   return str(1)
 
 @app.route("/stop/", methods = ["POST"])
 def stop():
   # Stop moving.
   continuous_driving.stop(web_interface.root)
-  web_interface.root.is_driving = False
   return str(1)
 
 class web_interface(Program):
@@ -115,7 +120,6 @@ class web_interface(Program):
   def run(self):
     web_interface.root = self
     self.lds = None
-    self.is_driving = False
 
     app.debug = True
     # The flask auto-reloader doesn't work well with multiprocessing.
