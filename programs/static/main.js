@@ -21,33 +21,52 @@ function main() {
 function Movement() {
   this.enabled = false;
   this.driving = false;
+  this.turning = false;
 
   // Handles key presses.
   this.handleKeys = function(evn) {
-    if (this.enabled && !this.driving) {
-      if (evn.which === 38) {
+    if (this.enabled) {
+      console.log(evn.which);
+      if (evn.which === 38 && !this.driving) {
         $.post("drive_forward/", function() {});
-        this.driving = true;
-      } else if (evn.which === 40) {
+        this.driving = "drive_forward/";
+      } else if (evn.which === 40 && !this.driving) {
         $.post("drive_backward/", function() {});
-        this.driving = true;
-      } else if (evn.which === 37) {
+        this.driving = "drive_backward/";
+      } else if (evn.which === 37 && !this.turning) {
         $.post("turn_left/", function() {});
-        this.driving = true;
-      } else if (evn.which === 39) {
+        this.turning = "turn_left/";
+      } else if (evn.which === 39 && !this.turning) {
         $.post("turn_right/", function() {});
-        this.driving = true;
+        this.turning = "turn_right/";
       }
 
+      evn.preventDefault();
       return false;
     }
   };
 
   // Handles key release.
-  this.handleStop = function() {
+  this.handleStop = function(evn) {
     if (this.enabled) {
+      if (this.driving && this.turning) {
+        // We should have two stops to stop this completely.
+        if (evn.which === 38 || evn.which === 40) {
+          // Keep turning.
+          $.post(this.turning, function() {});
+          this.driving = undefined;
+          return false;
+        } else if (evn.which === 37 || evn.which === 39) {
+          // Keep driving.
+          $.post(this.driving, function() {});
+          this.turning = undefined;
+          return false;
+        }
+      }
+
       $.post("stop/", function() {});
-      this.driving = false;
+      this.driving = undefined;
+      this.turning = undefined;
       return false;
     }
   };
@@ -74,8 +93,8 @@ function Movement() {
   $(document).keydown(function(evn) {
     instance.handleKeys(evn);
   });
-  $(document).keyup(function() {
-    instance.handleStop();
+  $(document).keyup(function(evn) {
+    instance.handleStop(evn);
   });
 }
 

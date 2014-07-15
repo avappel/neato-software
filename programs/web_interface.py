@@ -85,28 +85,44 @@ def lds():
 def drive_forward():
   # Drive forward.
   continuous_driving.drive(web_interface.root, 1, 1, 300)
+  web_interface.root.quickturn = False
   return str(1)
 
 @app.route("/drive_backward/", methods = ["POST"])
 def drive_backward():
   # Drive backward.
   continuous_driving.drive(web_interface.root, -1, -1, 300)
+  web_interface.root.quickturn = False
   return str(1)
 
 @app.route("/turn_left/", methods = ["POST"])
 def turn_left():
-  continuous_driving.drive(web_interface.root, -1, 1, 100)
+  if web_interface.root.quickturn:
+    # Quickturn.
+    continuous_driving.drive(web_interface.root, -1, 1, 100)
+  else:
+    continuous_driving.drive(web_interface.root, 0, 1, 300)
+    # Next time we get a request, it must be because the driver released the up
+    # or down arrow.
+    web_interface.root.quickturn = True
+
   return str(1)
 
 @app.route("/turn_right/", methods = ["POST"])
 def turn_right():
-  continuous_driving.drive(web_interface.root, 1, -1, 100)
+  if web_interface.root.quickturn:
+    continuous_driving.drive(web_interface.root, 1, -1, 100)
+  else:
+    continuous_driving.drive(web_interface.root, 1, 0, 300)
+    web_interface.root.quickturn = True
+    
   return str(1)
 
 @app.route("/stop/", methods = ["POST"])
 def stop():
   # Stop moving.
   continuous_driving.stop(web_interface.root)
+  web_interface.root.quickturn = True
   return str(1)
 
 class web_interface(Program):
@@ -120,6 +136,7 @@ class web_interface(Program):
   def run(self):
     web_interface.root = self
     self.lds = None
+    self.quickturn = True
 
     app.debug = True
     # The flask auto-reloader doesn't work well with multiprocessing.
