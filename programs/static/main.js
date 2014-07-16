@@ -15,13 +15,24 @@ function main() {
   setInterval(function() {
     lidar.update();
   }, 2000);
+  setInterval(function() {
+    movement.keepAlive();
+  }, 1000);
 }
 
 // A class for handling movement control.
 function Movement() {
   this.enabled = false;
+  this.last_enabled = false;
   this.driving = false;
   this.turning = false;
+
+  // Tell the backend we're still alive.
+  this.keepAlive = function() {
+    if (this.enabled) {
+      $.post("feed_watchdog/", function() {});
+    }
+  };
 
   // Handles key presses.
   this.handleKeys = function(evn) {
@@ -76,10 +87,16 @@ function Movement() {
       $("#enable_rc").text("Click here to disable RC.");
       $("#enable_rc").css("color", "#D11919");
       this.enabled = true;
+
+      // Start watchdog.
+      $.post("feed_watchdog/", function() {});
     } else {
       $("#enable_rc").text("Click here to enable RC.");
       $("#enable_rc").css("color", "#009933");
       this.enabled = false;
+
+      // Stop watchdog.
+      $.post("stop_watchdog/", function() {});
     }
   };
 

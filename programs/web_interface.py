@@ -18,6 +18,7 @@ import continuous_driving
 import motors
 import log
 import sensors
+import watchdog
 
 app = Flask(__name__)
 
@@ -125,18 +126,48 @@ def stop():
   web_interface.root.quickturn = True
   return str(1)
 
+# Callback for the watchdog.
+def callback(program):
+  continuous_driving.stop(program)
+
+# Feeds the watchdog on the wheels.
+@app.route("/feed_watchdog/", methods = ["POST"])
+def feed_watchdog():
+  # Register the watchdog if we haven't already.
+  if not web_interface.root.has_watchdog:
+    watchdog.register(web_interface.root, 5, callback)
+    web_interface.root.has_watchdog = True
+    # If we're reconnecting, we probably want the quickturn to start. (It did
+    # not get set if the watchdog timed out.)
+    web_interface.root.quickturn = False
+
+  watchdog.feed(web_interface.root)
+  return str(1)
+
+# Deregisters the watchdog.
+@app.route("/stop_watchdog/", methods = ["POST"])
+def stop_watchdog():
+  if web_interface.root.has_watchdog:
+    watchdog.deregister(web_interface.root)
+    web_interface.root.has_watchdog = False
+
+  return str(1)
+
 class web_interface(Program):
   # The root instance of this class.
   root = None
 
   def setup(self):
     self.add_pipe("control")
+    self.add_pipe("watchdog")
+    
     self.add_feed("web_logging")
 
   def run(self):
     web_interface.root = self
     self.lds = None
     self.quickturn = True
+    self.has_watchdog = False
 
     app.debug = True
     # The flask auto-reloader doesn't work well with multiprocessing.
