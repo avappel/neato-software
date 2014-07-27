@@ -129,23 +129,30 @@ if __name__ == "__main__":
       program.add_feed_object(queue, name)
 
   # Set up and start all the processes for the programs.
-  processes = []
+  processes = {}
   for program in programs:
     process = Process(target = program.run)
     process.start()
-    processes.append(process)
+    processes[process] = program.run
 
-  # Clean things up as they finish.
+  # Clean things up as they finish, or restart them if they fail.
   while True:
-    if not len(processes):  
+    if not len(processes.keys()):  
       break
 
     to_delete = []
-    for process in processes:
+    for process in processes.keys():
       if not process.is_alive():
         process.join()
+
+        if process.exitcode:
+          # Process failed.
+          new_process = Process(target = processes[process])
+          new_process.start()
+          processes[new_process] = processes[process]
+
         to_delete.append(process)
     for process in to_delete:
-      processes.remove(process)
+      processes.pop(process, None)
 
     time.sleep(1)

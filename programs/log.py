@@ -79,3 +79,6 @@ def error(program, message):
 
 def fatal(program, message):
   __log_write("FATAL", program, message)
+  
+  # Exit with failure.
+  sys.exit(1)
