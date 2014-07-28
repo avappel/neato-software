@@ -67,7 +67,7 @@ class log(Program):
         size = os.path.getsize(LOG_LOCATION)
         if size > self.max_size:
           # Clear file.
-          root.truncate()
+          root.truncate(0)
 
 # Shortcuts for logging to the root logger at specific levels.
 def __log_write(level, program, message):
