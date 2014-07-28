@@ -3,6 +3,7 @@
 import sys
 sys.path.append("..")
 
+import os
 import serial
 import time
 
@@ -59,9 +60,13 @@ class control(Program):
     self.add_feed("control")
 
   def run(self):
+    while not os.path.exists("/dev/ttyACM0"):
+      log.error(self, "Serial port is not ready!")
+      time.sleep(1)
+
     self.serial = serial.Serial(port = "/dev/ttyACM0", timeout = 1)
     # Enable test mode on the neato.
-    self.serial.write("testmode on\n")
+    self.__send_command("testmode on\n")
 
     self.cache = Cache()
     freezing_program = None
