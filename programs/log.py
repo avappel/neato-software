@@ -1,5 +1,6 @@
 # Logging system on the BBB.
 
+import os
 import sys
 sys.path.append("..")
 
@@ -35,6 +36,8 @@ class Logger:
 root = Logger(LOG_LOCATION)
 
 class log(Program):
+  max_size = 10000000
+
   def setup(self):
     self.add_feed("logging")
 
@@ -59,6 +62,12 @@ class log(Program):
       else:
         root.flush()
         flush_pending = False
+
+        # Check file size.
+        size = os.path.getsize(LOG_LOCATION)
+        if size > self.max_size:
+          # Clear file.
+          root.truncate()
 
 # Shortcuts for logging to the root logger at specific levels.
 def __log_write(level, program, message):

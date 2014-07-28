@@ -180,7 +180,6 @@ class control(Program):
           else:
             ret[split[0]] = None
 
-        log.debug(self, "Got response: %s" % (str(ret)))
         return ret
 
   def __write_command(self, command):

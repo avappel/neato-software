@@ -29,8 +29,16 @@
       style="overflow: hidden; margin-left: 20px; width: auto;">
     <h4>Movement</h4>
     <p id="enable_rc" style="color: #009933">Click here to enable RC.</p>
+    <label id="speed_value">300</label>
+    <input type="range" id="speed" value="300" min="10" max="300"
+        onchange="showValue(this.value)"/>
   </div>
 </div>
+<script type="text/javascript">
+function showValue(value) {
+  document.getElementById("speed_value").innerHTML = value;
+}
+</script>
 
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js">
 </script>
