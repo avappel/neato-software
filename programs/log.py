@@ -8,13 +8,58 @@ import time
 
 from starter import Program
 
-LOG_LOCATION = "/home/driver/test_log.log"
+LOG_LOCATION = "../tmp/robot_logs/"
 
 # Represents a logger writing to a single file.
 class Logger:
+  # Initial size of all the old logs.
+  start_size = 0
+  # Maximum space used by logs.
+  max_size = 1000000000000
+
   def __init__(self, location):
-    self.file = open(location, "w")
-  
+    self.location = location
+    self.file = None
+    
+    self.__remove_old()
+
+    name = str(time.time()).split(".")[0]
+    name += ".log"
+    self.file_path = os.path.join(self.location, name)
+    self.file = open(self.file_path, "w")
+
+    # Set symlink.
+    current = os.path.join(self.location, "current")
+    if os.path.lexists(current):
+      os.remove(current)
+    os.symlink(name, current)
+
+  # Remove old logs if things are getting too big.
+  def __remove_old(self):
+    old_files = os.listdir(self.location)
+    old_files.sort()
+    
+    if "current" in old_files:
+      old_files.remove("current")
+
+    for i in range(0, len(old_files)):
+      old_files[i] = os.path.join(self.location, old_files[i])
+    
+    size = sum(os.path.getsize(f) for f in old_files)
+
+    while size > self.max_size:
+      to_delete = old_files.pop(0)
+    
+      if (self.file != None and len(old_files) == 0):
+        self.clear()
+        Logger.start_size = 0
+        return
+
+      size -= os.path.getsize(to_delete)
+      os.remove(to_delete)
+
+    Logger.start_size = size
+
   def __del__(self):
     self.file.close()
 
@@ -23,21 +68,23 @@ class Logger:
     timestamp = time.ctime()
     self.file.write("[%s@%s] %s: %s\n" % (name, timestamp, level, message))
 
-    # If it's fatal, we abort with an error.
-    if level == "FATAL":
-      self.file.close()
-      sys.exit(1)
-  
   # Flushes all messages not yet written.
   def flush(self):
     self.file.flush()
+
+    # Clear the file if it's too big.
+    if os.path.getsize(self.file_path) + self.start_size > self.max_size:
+      self.__remove_old()
+
+  # Clears the logfile.
+  def clear(self):
+    self.file.seek(0)
+    self.file.truncate()
 
 # Initialize root logging instance.
 root = Logger(LOG_LOCATION)
 
 class log(Program):
-  max_size = 10000000
-
   def setup(self):
     self.add_feed("logging")
 
@@ -62,12 +109,6 @@ class log(Program):
       else:
         root.flush()
         flush_pending = False
-
-        # Check file size.
-        size = os.path.getsize(LOG_LOCATION)
-        if size > self.max_size:
-          # Clear file.
-          root.truncate(0)
 
 # Shortcuts for logging to the root logger at specific levels.
 def __log_write(level, program, message):
