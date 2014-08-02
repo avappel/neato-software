@@ -13,7 +13,7 @@
         '-lsupc++',
       ],
       'sources': [
-        'pru_test.c',
+        'sensors.c',
       ],
     },
   ],
