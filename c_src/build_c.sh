@@ -13,6 +13,7 @@ if [ ! -d "$SWIG_DIR" ]; then
 else
   rm ${SWIG_DIR}/*
 fi
+echo "" > ${SWIG_DIR}/__init__.py
 
 # Move files.
 find out/Default/lib -name "libswig_*" -type f -exec cp -t $SWIG_DIR {} \+

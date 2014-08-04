@@ -1,10 +1,17 @@
 # Interfaces with neato command line.
 
+import atexit
+
 import serial_api as control
 
 from programs import log
+from swig import pru
 
 import rate
+
+# Initialize pru. (It's okay if this runs more than once.)
+if not pru.Init():
+  raise RuntimeError("PRU initialization failed.")
 
 # Represents LDS sensor, and allows user to control it.
 class LDS:
@@ -90,9 +97,8 @@ class Analog:
 
   # Gets readings from the drop sensors.
   def drop(self, **kwargs):
-    info = self.__get_sensors(**kwargs)
-    left = int(info["LeftDropInMM"])
-    right = int(info["RightDropInMM"])
+    left = pru.GetLeftDrop()
+    right = pru.GetRightDrop()
     
     return (left, right)
 

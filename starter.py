@@ -5,9 +5,12 @@
 from multiprocessing import Pipe, Process, Queue
 from Queue import Full
 
+import atexit
 import os
 import sys
 import time
+
+from swig import pru
 
 # A class representing a single program to be run on the robot as one process.
 class Program:
@@ -81,6 +84,9 @@ class Program:
     raise NotImplementedError("User must override this in all programs.")
 
 if __name__ == "__main__":
+  # Cleanup pru when everything is done.
+  atexit.register(pru.Cleanup)
+
   # Check in the programs directory and import everything.
   sys.path.append("programs")
   raw_names = os.listdir("programs")

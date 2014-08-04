@@ -1,6 +1,6 @@
-/* Swig interface file for sensors. */
+/* Swig interface file for pru. */
 
-%module sensors
+%module pru
 
 %{
 #include <stdbool.h>

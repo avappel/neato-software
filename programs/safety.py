@@ -25,7 +25,7 @@ class safety(Program):
     check_drop = True
     
     while True:
-      rate.rate(0.5)
+      rate.rate(0.01)
      
       # Check that we're not about to drive off a drop.
       left_drop, right_drop = analog.drop(stale_time = 0)
@@ -43,7 +43,7 @@ class safety(Program):
         self.wheels.enable()
         serial_api.unfreeze(self)
         wheels_extended = False
-      elif (max(left_drop, right_drop) >= 80 and not wheels_extended):
+      elif (max(left_drop, right_drop) < 25000 and not wheels_extended):
         log.info(self, "Detected drop, running drop handler.")
         self.__drop_handler()
             
