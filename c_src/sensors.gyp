@@ -8,8 +8,6 @@
       ],
       'ldflags': [
         '-lpruio',
-        '-L"/usr/local/lib/freebasic/"',
-        '-lfb',
         '-lpthread',
         '-lprussdrv',
         '-ltermcap',
