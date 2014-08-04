@@ -2,7 +2,7 @@
 
 # Contains code for starting programs and coordinating them.
 
-from multiprocessing import Pipe, Process, Queue
+from multiprocessing import Pipe, Process, Queue, Array
 from Queue import Full
 
 import atexit
@@ -11,6 +11,8 @@ import sys
 import time
 
 from swig import pru
+
+import robot_status
 
 # A class representing a single program to be run on the robot as one process.
 class Program:
@@ -105,6 +107,11 @@ if __name__ == "__main__":
     exec("from %s import %s" % (program, program))
     exec("instance = " + program + "()")
     programs.append(instance)
+
+  # Create underlying shared memory array for robot status.
+  status_array = Array('i', robot_status.array_size)
+  for program in programs:
+    program.status_array = status_array
   
   # Make all the requested pipes.
   for program in programs:

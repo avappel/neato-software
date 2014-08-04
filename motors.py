@@ -6,6 +6,7 @@ from programs import log
 from sensors import LDS
 
 import rate
+import robot_status
 import serial_api as control
 
 class Wheels:
@@ -16,9 +17,6 @@ class Wheels:
 
     self.enable()
 
-  def __del__(self):  
-    self.disable()
-
   # Waits for motors to be stopped.
   def __wait_for_stop(self):
     while self.get_wheel_rpms(stale_time = 0)[0] != 0:
@@ -26,20 +24,20 @@ class Wheels:
     while self.get_wheel_rpms(stale_time = 0)[1] != 0:
       time.sleep(0.01)
 
+    robot_status.IsNotDriving(self.program)
+
   # Enables both drive motors.
-  def enable(self, block = True):
+  def enable(self):
     if not self.enabled:
       control.send_command(self.program, "SetMotor LWheelEnable RWheelEnable")
       self.enabled = True
-
-      if block:
-        self.__wait_for_stop()
 
   # Disables both drive motors.
   def disable(self):
     if self.enabled:
       control.send_command(self.program, "SetMotor LWheelDisable RWheelDisable")
       self.enabled = False
+      robot_status.IsNotDriving(self.program)
 
   # A version of drive that employs the LDS in order to not crash into things.
   def safe_drive(self, left_dist, right_dist, speed):
@@ -121,6 +119,7 @@ class Wheels:
 
   # Instruct the drive motors to move.
   def drive(self, left_dist, right_dist, speed, block = True):
+    robot_status.IsDriving(self.program)
     control.send_command(self.program, "SetMotor %d %d %d" % (left_dist, right_dist, speed))
   
     if block:
@@ -129,6 +128,7 @@ class Wheels:
   # Stops both drive motors immediately.
   def stop(self):
     control.send_command(self.program, "SetMotor -1 -1 300")
+    robot_status.IsNotDriving(self.program)
 
   # Get RPMs of wheel motors.
   def get_wheel_rpms(self, **kwargs):

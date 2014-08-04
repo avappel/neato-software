@@ -9,6 +9,7 @@ from starter import Program
 import log
 import motors
 import rate
+import robot_status
 import sensors
 import serial_api
 
@@ -19,41 +20,44 @@ class safety(Program):
   def run(self):
     self.wheels = motors.Wheels(self)
     self.enabled = True
+    stale_data = False
 
     analog = sensors.Analog(self)
     digital = sensors.Digital(self)
-    check_drop = True
     
     while True:
-      rate.rate(0.5)
-     
+      rate.rate(0.1)
+
       # Check that we're not about to drive off a drop.
-      try:
-        left_drop, right_drop = analog.drop(stale_time = 0)
-        if not self.enabled:
-          log.info(self, "Reenabling wheels...")
+      if (robot_status.GetDriving(self) or not self.enabled):
+        try:
+          left_drop, right_drop = analog.drop(stale_time = 0)
+          if stale_data:
+            log.info(self, "Reenabling wheels...")
+            self.__enable()
+            stale_data = False
+
+        except ValueError:
+          if not stale_data:
+            log.warning(self, "Can't get reliable readings. Disabling motors...")
+            self.__disable()
+            stale_data = True
+            continue
+
+        log.debug(self, "Drop sensor readings: %d, %d." % (left_drop, right_drop))
+        
+        if (max(left_drop, right_drop) <= 25000 and self.enabled):
+          left, right = digital.wheels_extended(stale_time = 0.5)
+          if (not left and not right):
+            log.info(self, "Detected drop, running drop handler.")
+            self.__drop_handler()
+          else:
+            log.info(self, "Robot picked up, disabling.")
+            self.__disable()
+        elif (max(left_drop, right_drop) > 25000 and not self.enabled):
+          # We're back on the ground.
+          log.info(self, "Back on ground, continuing...")
           self.__enable()
-
-      except ValueError:
-        if self.enabled:
-          log.warning(self, "Can't get reliable readings. Disabling motors...")
-          self.__disable()
-          continue
-
-      log.debug(self, "Drop sensor readings: %d, %d." % (left_drop, right_drop))
-      
-      # Disable the wheels if someone picked us up.
-      left, right = digital.wheels_extended(stale_time = 0.5)
-      if ((left or right) and self.enabled):
-        log.info(self, "Wheels extended, disabling.")
-        self.__disable()
-      elif ((not (left or right)) and not self.enabled):
-        log.info(self, "Wheels not extended, enabling.")
-        self.__enable()
-      # Run drop handler.
-      elif (max(left_drop, right_drop) < 25000 and self.enabled):
-        log.info(self, "Detected drop, running drop handler.")
-        self.__drop_handler()
             
   # Handles a detected drop.
   def __drop_handler(self):
@@ -71,12 +75,12 @@ class safety(Program):
 
   # Disables motors.
   def __disable(self):
-    serial_api.freeze()
+    serial_api.freeze(self)
     self.wheels.disable()
     self.enabled = False
 
   # Enables motors.
   def __enable(self):
     self.wheels.enable()
-    serial_api.unfreeze()
+    serial_api.unfreeze(self)
     self.enabled = True
