@@ -36,21 +36,11 @@ bool Init() {
 }
 
 // Gets a single reading from the analog sensors.
-void GetDrops(uint16_t *left, uint16_t *right) { 
+// The arguments are kind of funky here because SWIG works better with seperate
+// inputs and outputs.
+void GetDrops(int *left, int *right, int *right_out, int *left_out) { 
   *left = io->Value[LEFT_AIN + 1];
   *right = io->Value[RIGHT_AIN + 1];
-}
-
-int main(int argc, const char **argv) {
-  Init();
-
-  uint16_t left;
-  uint16_t right;
-  GetDrops(&left, &right);
-  printf("Drop sensors: %d, %d\n", left, right);
-  sleep(1);
-  GetDrops(&left, &right);
-  printf("Drop sensors: %d, %d\n", left, right);
-
-  Cleanup();
+  left_out = left;
+  right_out = right;
 }
