@@ -36,10 +36,18 @@ bool Init() {
 }
 
 // Get readings from each of the drop sensors. 
-int GetLeftDrop() { 
-  return io->Value[LEFT_AIN + 1];
+int GetDrop(int ain) {
+  if (io) {
+    return io->Value[ain + 1];
+  } else {
+    return -1;
+  }
+}
+
+int GetLeftDrop() {
+  return GetDrop(LEFT_AIN);
 }
 
 int GetRightDrop() {
-  return io->Value[RIGHT_AIN + 1];
+  return GetDrop(RIGHT_AIN);
 }

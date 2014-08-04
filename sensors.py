@@ -99,6 +99,10 @@ class Analog:
   def drop(self, **kwargs):
     left = pru.GetLeftDrop()
     right = pru.GetRightDrop()
+
+    if (left < 0 or right < 0):
+      log.error(self.program, "Getting drop sensor readings failed.")
+      raise ValueError("Getting drop sensor readings failed.")
     
     return (left, right)
 
