@@ -2,8 +2,11 @@
 
 %module sensors
 
-%include "typemaps.i"
+%{
+#include <stdbool.h>
+%}
 
 void Cleanup();
 bool Init();
-bool GetDrops(int *INPUT, int *INPUT, int *OUTPUT, int *OUTPUT);
+int GetLeftDrop();
+int GetRightDrop();

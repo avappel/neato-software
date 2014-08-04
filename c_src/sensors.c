@@ -35,12 +35,11 @@ bool Init() {
   return true; 
 }
 
-// Gets a single reading from the analog sensors.
-// The arguments are kind of funky here because SWIG works better with seperate
-// inputs and outputs.
-void GetDrops(int *left, int *right, int *right_out, int *left_out) { 
-  *left = io->Value[LEFT_AIN + 1];
-  *right = io->Value[RIGHT_AIN + 1];
-  left_out = left;
-  right_out = right;
+// Get readings from each of the drop sensors. 
+int GetLeftDrop() { 
+  return io->Value[LEFT_AIN + 1];
+}
+
+int GetRightDrop() {
+  return io->Value[RIGHT_AIN + 1];
 }

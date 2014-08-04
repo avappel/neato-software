@@ -1,10 +1,11 @@
 {
   'targets': [
     {
-      'target_name': 'sensors',
+      'target_name': 'swig_sensors',
       'type': 'shared_library',
       'cflags': [
         '-fPIC',
+        '-I"/usr/include/python2.7"',
       ],
       'ldflags': [
         '-lpruio',
@@ -12,9 +13,12 @@
         '-lprussdrv',
         '-ltermcap',
         '-lsupc++',
+        '-L"/usr/local/lib/freebasic"',
+        '-lfbpic',
       ],
       'sources': [
         'sensors.c',
+        'sensors_wrap.c',
       ],
       'actions': [
         {
