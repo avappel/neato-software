@@ -44,9 +44,9 @@ class safety(Program):
             stale_data = True
             continue
 
-        log.debug(self, "Drop sensor readings: %d, %d." % (left_drop, right_drop))
-        
         if (max(left_drop, right_drop) <= 25000 and self.enabled):
+          log.debug(self, "Drop sensor readings: %d, %d." % (left_drop, right_drop))
+          
           left, right = digital.wheels_extended(stale_time = 0.5)
           if (not left and not right):
             log.info(self, "Detected drop, running drop handler.")
@@ -56,6 +56,8 @@ class safety(Program):
             self.__disable()
         elif (max(left_drop, right_drop) > 25000 and not self.enabled):
           # We're back on the ground.
+          log.debug(self, "Drop sensor readings: %d, %d." % (left_drop, right_drop))
+          
           log.info(self, "Back on ground, continuing...")
           self.__enable()
             

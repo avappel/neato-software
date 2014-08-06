@@ -57,7 +57,13 @@ class LDS:
     # Discard any errors.
     for key in packet.keys():
       if int(packet[key][2]) == 0:
-        ret[int(key)] = [int(x) for x in packet[key]]
+        # Convert the angle so that 0 deg is to the right, not up.
+        angle = int(key)
+        real_angle = angle + 90
+        if real_angle > 359:
+          real_angle -= 359
+
+        ret[real_angle] = [int(x) for x in packet[key]]
       else:
         log.debug(self.program, "Error %s in LDS reading for angle %s." % \
             (packet[key][2], key))

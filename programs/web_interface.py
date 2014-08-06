@@ -65,7 +65,16 @@ def logging():
 @app.route("/lds_active/", methods = ["GET", "POST"])
 def lds_active():
   if request.method == "GET":
-    return str(int(sensors.LDS.is_active(web_interface.root)))
+    status = int(sensors.LDS.is_active(web_interface.root))
+
+    # If it's active, let's make an instance of it.
+    if (status and not web_interface.root.lds):
+      web_interface.root.lds = sensors.LDS(web_interface.root)
+    # If it's not active, be sure we don't have one.
+    if (not status and web_interface.root.lds):
+      web_interface.root.lds = None
+
+    return str(status)
   else:
     # Activate the LIDAR.
     if not web_interface.root.lds:
