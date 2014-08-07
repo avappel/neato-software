@@ -12,44 +12,42 @@ import serial_api as control
 class Wheels:
   enabled = False
 
-  def __init__(self, program):
-    self.program = program
-
+  def __init__(self):
     self.enable()
 
   # Waits for motors to be stopped.
   def __wait_for_stop(self):
     while self.get_wheel_rpms(stale_time = 0)[0] != 0:
-      time.sleep(0.01)
+      time.sleep(0.1)
     while self.get_wheel_rpms(stale_time = 0)[1] != 0:
-      time.sleep(0.01)
+      time.sleep(0.1)
 
-    robot_status.IsNotDriving(self.program)
+    robot_status.IsNotDriving()
 
   # Enables both drive motors.
   def enable(self):
     if not self.enabled:
-      control.send_command(self.program, "SetMotor LWheelEnable RWheelEnable")
+      control.send_command("SetMotor LWheelEnable RWheelEnable")
       self.enabled = True
 
   # Disables both drive motors.
   def disable(self):
     if self.enabled:
-      control.send_command(self.program, "SetMotor LWheelDisable RWheelDisable")
+      control.send_command("SetMotor LWheelDisable RWheelDisable")
       self.enabled = False
-      robot_status.IsNotDriving(self.program)
+      robot_status.IsNotDriving()
 
   # A version of drive that employs the LDS in order to not crash into things.
   def safe_drive(self, left_dist, right_dist, speed):
     # Max speed here is 200 for safety reasons.
     speed = min(speed, 200)
 
-    lds = LDS(self.program)
+    lds = LDS()
     paused = True
     watching = {}
     danger = []
     initial_distance = self.get_distance(stale_time = 0)
-    
+
     while True:
       # Even at max speed, it will take at least this long for anything to
       # change.
@@ -59,12 +57,12 @@ class Wheels:
       if not paused:
         rpms = self.get_wheel_rpms(stale_time = 0)
         if max(rpms[0], rpms[1]) == 0:
-          log.info(self.program, "Safe drive: Exiting loop.")
+          log.info("Safe drive: Exiting loop.")
           break
 
       # Get newest data from LDS.
       packet = lds.get_scan()
-      
+
       # Anything fewer than a certain distance away we want to watch.
       watch_distance = 450
       for key in packet.keys():
@@ -96,13 +94,13 @@ class Wheels:
           to_delete.append(key)
           if key not in danger:
             danger.append(key)
-      
+
       for key in to_delete:
         watching.pop(key, None)
 
       # Stop the motors if we have to.
       if (len(danger) and not paused):
-        log.warning(self.program, "Stopping due to obstacle.")
+        log.warning("Stopping due to obstacle.")
         self.stop()
         paused = True
       if (not len(danger) and paused):
@@ -111,7 +109,7 @@ class Wheels:
         right_distance = new_distance[1] - initial_distance[1]
         left_to_go = left_dist - left_distance
         right_to_go = right_dist - right_distance
-        log.info(self.program, "Safe drive: SetMotors %d %d %d" % \
+        log.info("Safe drive: SetMotors %d %d %d" % \
             (left_to_go, right_to_go, speed))
         self.drive(left_to_go, right_to_go, speed, block = False)
 
@@ -119,27 +117,27 @@ class Wheels:
 
   # Instruct the drive motors to move.
   def drive(self, left_dist, right_dist, speed, block = True):
-    robot_status.IsDriving(self.program)
-    control.send_command(self.program, "SetMotor %d %d %d" % (left_dist, right_dist, speed))
-  
+    robot_status.IsDriving()
+    control.send_command("SetMotor %d %d %d" % (left_dist, right_dist, speed))
+
     if block:
       self.__wait_for_stop()
-      
+
   # Stops both drive motors immediately.
   def stop(self):
-    control.send_command(self.program, "SetMotor -1 -1 300")
-    robot_status.IsNotDriving(self.program)
+    control.send_command("SetMotor -1 -1 300")
+    robot_status.IsNotDriving()
 
   # Get RPMs of wheel motors.
   def get_wheel_rpms(self, **kwargs):
-    info = control.get_output(self.program, "GetMotors", **kwargs)
+    info = control.get_output("GetMotors", **kwargs)
     left = int(info["LeftWheel_RPM"])
     right = int(info["RightWheel_RPM"])
     return (left, right)
-  
+
   # Get the distance traveled by each wheel.
   def get_distance(self, **kwargs):
-    info = control.get_output(self.program, "GetMotors", **kwargs)
+    info = control.get_output("GetMotors", **kwargs)
     left = int(info["LeftWheel_PositionInMM"])
     right = int(info["RightWheel_PositionInMM"])
     return (left, right)

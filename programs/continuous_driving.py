@@ -17,7 +17,7 @@ class continuous_driving(Program):
     self.add_pipe("control")
 
   def run(self):
-    wheels = motors.Wheels(self)
+    wheels = motors.Wheels()
 
     last_send = 0
     distance = 0
@@ -31,10 +31,10 @@ class continuous_driving(Program):
         command = data[0]
         timestamp = data[1]
         if time.time() - timestamp > 1:
-          log.info(self, "Command too old: " + str(command))
+          log.info("Command too old: " + str(command))
           continue
 
-        log.info(self, "Got new command: " + str(command))
+        log.info("Got new command: " + str(command))
         new_command = True
 
         if command != "stop":
@@ -51,7 +51,7 @@ class continuous_driving(Program):
           distance = speed * 10
           left_dist = distance * left_dir
           right_dist = distance * right_dir
-          log.debug(self, "Target distance: %d." % (distance))
+          log.debug("Target distance: %d." % (distance))
 
       # Run the motors
       if distance:

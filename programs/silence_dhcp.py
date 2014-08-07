@@ -18,7 +18,7 @@ class silence_dhcp(Program):
       # Check for dhcping.
       output = subprocess.check_output("which dhcping", shell = True)
       if not output:
-        log.fatal(self, "dhcping not found.")
+        log.fatal("dhcping not found.")
 
       try:
         output = subprocess.check_output("dhcping %s" % (self.wnce_addr),
@@ -32,15 +32,15 @@ class silence_dhcp(Program):
         if "Got answer from:" in line:
           response_addr = line.split(": ")[1]
           responses.append(response_addr)
-          
-          log.info(self, "Got dhcp response from %s." % (response_addr))
+
+          log.info("Got dhcp response from %s." % (response_addr))
 
       # If it somehow gets reset, the second address will be the one it has.
       bad_addrs = [self.wnce_addr, "192.168.1.251"]
       for addr in bad_addrs:
         if addr in responses:
           log.error("WNCE IS RUNNING ROGUE DHCP SERVER!")
-          
+
           # Hibernating will automatically cut power to the wnce. It will,
           # however, also interrupt power to us.
           neato_system.hibernate()

@@ -8,7 +8,7 @@ def rate(interval):
   global last_time
   elapsed = time.time() - last_time
   last_time = time.time()
-  
+
   if elapsed > interval:
     return
   else:

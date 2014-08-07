@@ -8,6 +8,8 @@ import time
 
 from starter import Program
 
+import robot_status
+
 LOG_LOCATION = "../tmp/robot_logs/"
 
 # Represents a logger writing to a single file.
@@ -20,7 +22,7 @@ class Logger:
   def __init__(self, location):
     self.location = location
     self.file = None
-    
+
     self.__remove_old()
 
     name = str(time.time()).split(".")[0]
@@ -38,18 +40,18 @@ class Logger:
   def __remove_old(self):
     old_files = os.listdir(self.location)
     old_files.sort()
-    
+
     if "current" in old_files:
       old_files.remove("current")
 
     for i in range(0, len(old_files)):
       old_files[i] = os.path.join(self.location, old_files[i])
-    
+
     size = sum(os.path.getsize(f) for f in old_files)
 
     while size > self.max_size:
       to_delete = old_files.pop(0)
-    
+
       if (self.file != None and len(old_files) == 0):
         self.clear()
         Logger.start_size = 0
@@ -90,7 +92,7 @@ class log(Program):
 
   def run(self):
     flush_pending = False
-    
+
     while True:
       if (not flush_pending or not self.logging.empty()):
         level, name, message = self.logging.get()
@@ -111,24 +113,25 @@ class log(Program):
         flush_pending = False
 
 # Shortcuts for logging to the root logger at specific levels.
-def __log_write(level, program, message):
+def __log_write(level, message):
+  program = robot_status.program
   name = program.__class__.__name__
-  program.write_to_feed("logging", (level, name, message))
+  Program.write_to_feed("logging", (level, name, message))
 
-def debug(program, message):
-  __log_write("DEBUG", program, message)
+def debug(message):
+  __log_write("DEBUG", message)
 
-def info(program, message):
-  __log_write("INFO", program, message)
+def info(message):
+  __log_write("INFO", message)
 
-def warning(program, message):
-  __log_write("WARNING", program, message)
+def warning(message):
+  __log_write("WARNING", message)
 
 def error(program, message):
   __log_write("ERROR", program, message)
 
 def fatal(program, message):
   __log_write("FATAL", program, message)
-  
+
   # Exit with failure.
   sys.exit(1)

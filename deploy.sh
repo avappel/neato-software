@@ -2,7 +2,7 @@
 
 IP=$1
 if [ -z "$IP" ]; then
-  IP="10.8.0.1"
+  IP="10.8.0.10"
 fi
 
 NEATO="driver@${IP}"

@@ -34,7 +34,7 @@ class Program:
   # Verify that this name is not already in use.
   def __check_name_collisions(self, name):
     in_use = False
-    
+
     if name in self.pipe_names:
       in_use = True
     if name in self.feed_names:
@@ -65,9 +65,12 @@ class Program:
     self.feeds.append(queue)
 
   # Allows a subclass to write to a named feed.
-  def write_to_feed(self, name, message, block = True):
+  @staticmethod
+  def write_to_feed(name, message, block = True):
+    program = robot_status.program
+
     try:
-      feed = self.write_feeds[name]
+      feed = program.write_feeds[name]
     except KeyError:
       raise ValueError("No feed with name '%s' exists." % (name))
 
@@ -80,6 +83,13 @@ class Program:
   def setup(self):
     # User can override this, but it's okay not to do anything.
     pass
+
+  # Run needed initialization code.
+  def start(self):
+    # Set program reference.
+    robot_status.program = self
+
+    self.run()
 
   # Do whatever it is this program should do.
   def run(self):
@@ -94,7 +104,7 @@ if __name__ == "__main__":
   raw_names = os.listdir("programs")
 
   raw_names.remove("__init__.py")
-  
+
   # Remove anything we can't import.
   names = []
   for name in raw_names:
@@ -112,7 +122,7 @@ if __name__ == "__main__":
   status_array = Array('i', robot_status.array_size)
   for program in programs:
     program.status_array = status_array
-  
+
   # Make all the requested pipes.
   for program in programs:
     for name in program.pipe_names:
@@ -144,13 +154,13 @@ if __name__ == "__main__":
   # Set up and start all the processes for the programs.
   processes = {}
   for program in programs:
-    process = Process(target = program.run)
+    process = Process(target = program.start)
     process.start()
-    processes[process] = program.run
+    processes[process] = program.start
 
   # Clean things up as they finish, or restart them if they fail.
   while True:
-    if not len(processes.keys()):  
+    if not len(processes.keys()):
       break
 
     to_delete = []

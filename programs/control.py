@@ -1,4 +1,4 @@
-# General system functions as well as code for interfacing with the serial API.
+# Code for interfacing with the serial API.
 
 import sys
 sys.path.append("..")
@@ -42,7 +42,7 @@ class Cache:
       stale = Cache.stale_time
     else:
       stale = stale_time
-    
+
     timestamp = self.timestamps[command]
     if time.time() - timestamp >= stale:
       return None
@@ -61,7 +61,7 @@ class control(Program):
 
   def run(self):
     while not os.path.exists("/dev/ttyACM0"):
-      log.error(self, "Serial port is not ready!")
+      log.error("Serial port is not ready!")
       time.sleep(1)
 
     self.serial = serial.Serial(port = "/dev/ttyACM0", timeout = 1)
@@ -76,17 +76,17 @@ class control(Program):
       # Check for commands from all our pipes.
       if (not freezing_program and deffered_commands):
         data = deffered_commands.pop(0)
-        log.debug(self, "Running deffered command.")
+        log.debug("Running deffered command.")
       else:
         data = self.control.get()
       source = data.Source
-  
+
       # Freeze or unfreeze.
       if (data.Command == "freeze" and not freezing_program):
-        log.info(self, "%s is freezing control program." % (source))
+        log.info("%s is freezing control program." % (source))
         freezing_program = source
       elif (data.Command == "unfreeze" and source == freezing_program):
-        log.info(self, "Unfreezing control program.")
+        log.info("Unfreezing control program.")
         freezing_program = None
 
       # Normal serial command.
@@ -95,7 +95,7 @@ class control(Program):
           output = data.Output
           command = data.Command
           stale = data.Stale
-          log.debug(self, "Command: %s" % (command))
+          log.debug("Command: %s" % (command))
 
           if output:
             # We need to send the output back.
@@ -104,8 +104,7 @@ class control(Program):
               result = self.__get_output(command)
               self.cache.add(command, result, source)
             else:
-              log.debug(self, "Cache hit on %s." % \
-                  (command))
+              log.debug("Cache hit on %s." % (command))
 
             pipe = getattr(self, source)
             pipe.send(result)
@@ -114,9 +113,9 @@ class control(Program):
             self.__send_command(command)
         else:
           # We'll run this one later.
-          log.debug(self, "Deffering command: %s" % (data.Command))
+          log.debug("Deffering command: %s" % (data.Command))
           deffered_commands.append(data)
-      
+
   # Gets results from a command on the neato.
   def __get_output(self, command):
     self.serial.flush()
@@ -139,7 +138,7 @@ class control(Program):
           data += self.serial.read(read)
         except (OSError, serial.SerialException):
           # No data to read.
-          log.warning(self, "Got no serial data. Retrying...")
+          log.warning("Got no serial data. Retrying...")
           continue
 
       if start:
@@ -147,7 +146,7 @@ class control(Program):
 
         if response == "":
           # Timeout triggered and we still got no data.
-          log.warning(self, "Neato doesn't seem to want to respond.")
+          log.warning("Neato doesn't seem to want to respond.")
 
           # Resend command.
           self.__send_command(command)

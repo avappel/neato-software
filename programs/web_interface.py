@@ -15,7 +15,6 @@ from flask import request
 from starter import Program
 
 import continuous_driving
-import motors
 import log
 import sensors
 import watchdog
@@ -29,7 +28,7 @@ def main():
 # Get battery percentage.
 @app.route("/battery/")
 def battery():
-  analog = sensors.Analog(web_interface.root)
+  analog = sensors.Analog()
   voltage = analog.battery_voltage(stale_time = 60)
   percentage = voltage / 16000 * 100
   percentage = min(percentage, 100)
@@ -38,7 +37,7 @@ def battery():
 # Determine whether we are charging or not.
 @app.route("/charging/")
 def charging():
-  analog = sensors.Analog(web_interface.root)
+  analog = sensors.Analog()
   voltage = analog.charging(stale_time = 20)
 
   if int(voltage <= 20000):
@@ -65,11 +64,11 @@ def logging():
 @app.route("/lds_active/", methods = ["GET", "POST"])
 def lds_active():
   if request.method == "GET":
-    status = int(sensors.LDS.is_active(web_interface.root))
+    status = int(sensors.LDS.is_active())
 
     # If it's active, let's make an instance of it.
     if (status and not web_interface.root.lds):
-      web_interface.root.lds = sensors.LDS(web_interface.root)
+      web_interface.root.lds = sensors.LDS()
     # If it's not active, be sure we don't have one.
     if (not status and web_interface.root.lds):
       web_interface.root.lds = None
@@ -78,7 +77,7 @@ def lds_active():
   else:
     # Activate the LIDAR.
     if not web_interface.root.lds:
-      web_interface.root.lds = sensors.LDS(web_interface.root)
+      web_interface.root.lds = sensors.LDS()
     return str(1)
 
 # Get a packet from the lidar.
@@ -125,7 +124,7 @@ def turn_right():
   else:
     continuous_driving.drive(web_interface.root, 1, 0, 300)
     web_interface.root.quickturn = True
-    
+
   return str(1)
 
 @app.route("/stop/", methods = ["POST"])
@@ -148,7 +147,8 @@ def feed_watchdog():
     web_interface.root.has_watchdog = True
     # If we're reconnecting, we probably want the quickturn to start. (It did
     # not get set if the watchdog timed out.)
-    web_interface.root.quickturn = False
+    web_interface.root.quickturn = True
+    log.debug("Fed watchdog.")
 
   watchdog.feed(web_interface.root)
   return str(1)
@@ -169,7 +169,7 @@ class web_interface(Program):
   def setup(self):
     self.add_pipe("control")
     self.add_pipe("watchdog")
-    
+
     self.add_feed("web_logging")
 
   def run(self):

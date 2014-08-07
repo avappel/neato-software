@@ -1,13 +1,12 @@
 # Interfaces with neato command line.
 
-import atexit
-
 import serial_api as control
 
 from programs import log
 from swig import pru
 
 import rate
+import robot_status
 
 # Initialize pru. (It's okay if this runs more than once.)
 if not pru.Init():
@@ -15,21 +14,20 @@ if not pru.Init():
 
 # Represents LDS sensor, and allows user to control it.
 class LDS:
-  def __init__(self, program):
-    self.program = program
+  def __init__(self):
     self.ready = False
 
-    control.send_command(self.program, "SetLDSRotation on")
-  
+    control.send_command("SetLDSRotation on")
+
   def __del__(self):
-    control.send_command(self.program, "SetLDSRotation off")
+    control.send_command("SetLDSRotation off")
     LDS.spun_up = False
 
   # Wait for sensor to spin up.
   def __spin_up(self):
     if not self.ready:
-      log.info(self.program, "Waiting for LDS spinup.")
-      if not self.is_active(self.program):
+      log.info("Waiting for LDS spinup.")
+      if not self.is_active():
         # Wait for a valid packet.
         while True:
           rate.rate(0.01)
@@ -37,14 +35,14 @@ class LDS:
           scan = self.__get_scan()
           if len(scan.keys()) > 1:
             break
-        
+
       self.ready = True
-        
-      log.info(self.program, "LDS ready.")
+
+      log.info("LDS ready.")
 
   # Helper to get and parse a complete scan packet.
   def __get_scan(self):
-    packet = control.get_output(self.program, "GetLDSScan")
+    packet = control.get_output("GetLDSScan")
 
     # Get rid of help message.
     packet.pop("AngleInDegrees", None)
@@ -65,7 +63,7 @@ class LDS:
 
         ret[real_angle] = [int(x) for x in packet[key]]
       else:
-        log.debug(self.program, "Error %s in LDS reading for angle %s." % \
+        log.debug("Error %s in LDS reading for angle %s." % \
             (packet[key][2], key))
 
     return ret
@@ -81,25 +79,22 @@ class LDS:
 
   @staticmethod
   # Returns whether lds is active and ready to transmit data.
-  def is_active(program):
-    info = control.get_output(program, "GetMotors")
+  def is_active():
+    info = control.get_output("GetMotors")
     mvolts = int(info["Laser_mVolts"])
     return bool(mvolts)
 
   # Returns the rotation speed of the LDS sensor.
   def rotation_speed(self):
-    if not self.is_active(self.program):
+    if not self.is_active():
       return 0
 
     return self.__get_scan()["ROTATION_SPEED"]
-  
+
 # A class for the analog sensors.
 class Analog:
-  def __init__(self, program):
-    self.program = program
-
   def __get_sensors(self, **kwargs):
-    return control.get_output(self.program, "GetAnalogSensors", **kwargs)
+    return control.get_output("GetAnalogSensors", **kwargs)
 
   # Gets readings from the drop sensors.
   def drop(self, **kwargs):
@@ -107,9 +102,9 @@ class Analog:
     right = pru.GetRightDrop()
 
     if (left < 0 or right < 0):
-      log.error(self.program, "Getting drop sensor readings failed.")
+      log.error("Getting drop sensor readings failed.")
       raise ValueError("Getting drop sensor readings failed.")
-    
+
     return (left, right)
 
   # Returns the battery voltage.
@@ -127,11 +122,8 @@ class Analog:
     return voltage
 
 class Digital:
-  def __init__(self, program):
-    self.program = program
-
   def __get_sensors(self, **kwargs):
-    return control.get_output(self.program, "GetDigitalSensors", **kwargs)
+    return control.get_output("GetDigitalSensors", **kwargs)
 
   # Returns whether or not the wheels are extended.
   def wheels_extended(self, **kwargs):
@@ -143,5 +135,5 @@ class Digital:
         break
       except KeyError:
         continue
-    
+
     return (left, right)

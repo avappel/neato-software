@@ -38,7 +38,7 @@ class watchdog(Program):
           callbacks[name] = job[3]
           jobs.append(name)
 
-          log.info(self, "Got new job: %s" % (name))
+          log.info("Got new job: %s" % (name))
         else:
           try:
             jobs.remove(name)
@@ -47,19 +47,19 @@ class watchdog(Program):
 
           timeouts.pop(name, None)
           callbacks.pop(name, None)
-          
+
           if name in last_feeds.keys():
             last_feeds.pop(name, None)
 
-          log.info(self, "Removed job: %s" % (name))
+          log.info("Removed job: %s" % (name))
 
       # Get any new feed events.
       for name in jobs:
         pipe = getattr(self, name)
-        
+
         if pipe.poll():
           timestamp = pipe.recv()
-          log.debug(self, "Got feed from %s at %f." % (name, timestamp))
+          log.debug("Got feed from %s at %f." % (name, timestamp))
           last_feeds[name] = timestamp
 
           if name in timed_out:
@@ -69,7 +69,7 @@ class watchdog(Program):
       for key in last_feeds.keys():
         if time.time() - last_feeds[key] >= timeouts[key]:
           if key not in timed_out:
-            log.error(self, "Timeout on %s." % (key))
+            log.error("Timeout on %s." % (key))
             # Run callback.
             callbacks[name](self)
 

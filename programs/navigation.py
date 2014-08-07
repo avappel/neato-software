@@ -43,11 +43,11 @@ class navigation(Program):
 
         if command["map_building"]:
           self.map_building = True
-          log.info(self, "Enabling map building mode.")
-          self.lds = sensors.LDS(self)
+          log.info("Enabling map building mode.")
+          self.lds = sensors.LDS()
         else:
           self.map_building = False
-          log.info(self, "Disabling map building mode.")
+          log.info("Disabling map building mode.")
           self.lds = None
 
       # Attempt to map out the building we're in.
