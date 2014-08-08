@@ -2,7 +2,7 @@ import sys
 sys.path.append("..")
 
 #from programs import navigation
-from navigation import mapping, utilities
+from navigation import filters, mapping, utilities
 from starter import Program
 
 import motors
@@ -17,6 +17,7 @@ class test_navigation(Program):
 
     lds = sensors.LDS()
     scan = lds.get_scan()
+    scan = filters.remove_outliers(scan)
     scan = utilities.to_rectangular(scan)
 
     room = mapping.Room()

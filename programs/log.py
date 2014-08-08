@@ -127,11 +127,11 @@ def info(message):
 def warning(message):
   __log_write("WARNING", message)
 
-def error(program, message):
-  __log_write("ERROR", program, message)
+def error(message):
+  __log_write("ERROR", message)
 
-def fatal(program, message):
-  __log_write("FATAL", program, message)
+def fatal(message):
+  __log_write("FATAL", message)
 
   # Exit with failure.
   sys.exit(1)

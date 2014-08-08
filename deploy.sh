@@ -11,4 +11,5 @@ NEATO="driver@${IP}"
 rsync -avz * ${NEATO}:neato
 
 # Compile the C code.
-ssh ${NEATO} "cd neato/c_src; ./build_c.sh"
+ssh ${NEATO} "cd neato/c_src; ./build_c.sh; \
+    find .. -name *.pyc | xargs rm &> /dev/null;"

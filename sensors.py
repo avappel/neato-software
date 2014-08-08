@@ -82,7 +82,6 @@ class LDS:
   def is_active():
     info = control.get_output("GetMotors")
     mvolts = int(info["Laser_mVolts"])
-    print mvolts
     return bool(mvolts)
 
   # Returns the rotation speed of the LDS sensor.
