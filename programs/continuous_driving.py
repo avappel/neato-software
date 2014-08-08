@@ -3,13 +3,13 @@
 import sys
 sys.path.append("..")
 
+from rate import Rate
 from starter import Program
 
 import time
 
 import log
 import motors
-import rate
 
 class continuous_driving(Program):
   def setup(self):
@@ -22,6 +22,8 @@ class continuous_driving(Program):
     last_send = 0
     distance = 0
     new_command = False
+    rate = Rate()
+
     while True:
       rate.rate(0.1)
 

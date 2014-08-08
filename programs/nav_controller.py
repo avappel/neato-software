@@ -7,6 +7,7 @@ import sys
 sys.path.append("..")
 
 from programs import log
+from rate import Rate
 from starter import Program
 
 import sensors
@@ -24,7 +25,7 @@ def rectangular_pair(r, t):
 
   return (x, y)
 
-class navigation(Program):
+class nav_controller(Program):
   # How much "wiggle" is tolerated between points until we say there is a
   # doorway.
   doorway_threshold = 800
@@ -37,7 +38,11 @@ class navigation(Program):
     self.map_building = False
     self.lds = None
 
+    rate = Rate()
+
     while True:
+      rate.rate(1)
+
       if not self.navigation.empty():
         command = self.navigation.get()
 
@@ -54,7 +59,6 @@ class navigation(Program):
       if self.map_building:
         # Find the shape of the room we're in.
         print self.__room_shape()
-        time.sleep(5)
 
   # Finds the shape of the room using the LIDAR.
   def __room_shape(self):

@@ -4,11 +4,11 @@
 import sys
 sys.path.append("..")
 
+from rate import Rate
 from starter import Program
 
 import log
 import motors
-import rate
 import robot_status
 import sensors
 import serial_api
@@ -24,6 +24,8 @@ class safety(Program):
 
     analog = sensors.Analog()
     digital = sensors.Digital()
+
+    rate = Rate()
 
     while True:
       rate.rate(0.1)
@@ -70,8 +72,7 @@ class safety(Program):
     # Stop motors and navigate away from the drop.
     self.wheels.stop()
     self.wheels.drive(-500, -500, 100)
-    # TODO: (daniel) Figure out distance for 90 deg turn.
-    self.wheels.drive(150, -150, 300)
+    self.wheels.turn(90)
 
     # Unfreeze control program and return to normal operation.
     serial_api.unfreeze()

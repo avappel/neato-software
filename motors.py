@@ -3,11 +3,15 @@
 import time
 
 from programs import log
+from rate import Rate
 from sensors import LDS
 
-import rate
+import math
 import robot_status
 import serial_api as control
+
+# The distance between the wheels of the robot. (mm)
+robot_width = 240
 
 class Wheels:
   enabled = False
@@ -47,6 +51,8 @@ class Wheels:
     watching = {}
     danger = []
     initial_distance = self.get_distance(stale_time = 0)
+
+    rate = Rate()
 
     while True:
       # Even at max speed, it will take at least this long for anything to
@@ -122,6 +128,17 @@ class Wheels:
 
     if block:
       self.__wait_for_stop()
+
+  # Instructs the robot to turn by a certain number of degrees. Positive for
+  # counter-clockwise, negative for clockwise.
+  def turn(self, angle):
+    circumference = robot_width * math.pi
+    distance = angle * circumference / 360
+
+    speed = abs(angle) * 300 / 90
+    speed = min(speed, 300)
+
+    self.drive(-distance, distance, speed)
 
   # Stops both drive motors immediately.
   def stop(self):

@@ -2,10 +2,13 @@
 
 from __future__ import division
 
-from scipy.spatial import ConvexHull
+from pyhull.convex_hull import ConvexHull
 
 import math
 import sys
+
+import log
+import utilities
 
 # Represents a line.
 class Line:
@@ -36,6 +39,7 @@ class Line:
   def __init__(self, p1, p2, hullpoint_index):
     self.slope = (p2[0] - p1[0], p2[1] - p1[1])
     self.index = hullpoint_index
+    log.debug("Line slope, index: %s, %d." % (self.slope, self.index))
 
   # Find intercept.
   @property
@@ -60,19 +64,9 @@ class Line:
     slope = self.slope[1] / self.slope[0]
     return  slope * x + self.intercept
 
-  # Rotates the line around it's hullpoint.
-  def rotate(self, angle):
-    new_angle = self.angle + angle
-    new_slope = math.tan(new_angle)
-    self.slope = [1, new_slope]
-
   # Makes the slope orthogonal.
   def orthogonal(self, line):
     self.slope = [-line.slope[1], line.slope[0]]
-
-# Compute distance between two points
-def distance(p1, p2):
-  return ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) ** (1 / 2)
 
 # Calculate convex hull.
 def convex_hull(scan):
@@ -80,9 +74,12 @@ def convex_hull(scan):
 
   # Draw it on the canvas.
   points = []
+  hull.vertices.pop(len(hull.vertices) // 2)
   for vertex in hull.vertices:
-    points.append(scan[vertex])
+    points.append(scan[vertex[0]])
+  points.append(scan[hull.vertices[-1][1]])
 
+  log.debug("Convex hull: %s." % (points))
   return points
 
 # Calculates the dimensions of a rectangle defined by 4 lines, where l1 || to l2 and
@@ -92,10 +89,12 @@ def rectangle_dimensions(l1, l2, l3, l4):
   p2 = Line.find_intersection(l2, l4)
   p3 = Line.find_intersection(l1, l4)
   p4 = Line.find_intersection(l2, l3)
+  log.debug("Rectangle points: %s, %s, %s, %s." % (p1, p2, p3, p4))
 
   # p1 and p2 are diagonally opposite.
-  w = distance(p1, p3)
-  l = distance(p2, p3)
+  w = utilities.distance(p1, p3)
+  l = utilities.distance(p2, p3)
+  log.debug("Length, Width: %f, %f." % (l, w))
 
   return ((p1, p2, p3, p4), (w, l))
 
@@ -131,6 +130,11 @@ def ombb(points):
       y_min = point[1]
       bottom_point = i
 
+  log.debug("x_min, x_max, y_min, y_max: %d, %d, %d, %d." % \
+      (x_min, x_max, y_min, y_max))
+  log.debug("Ext. point indices: (L, R, T, B) %d, %d, %d, %d." % \
+      (left_point, right_point, top_point, bottom_point))
+
   top = Line((x_max, y_max), (x_min, y_max), top_point)
   bottom = Line((x_min, y_min), (x_max, y_min), bottom_point)
   left = Line((x_min, y_max), (x_min, y_min), left_point)
@@ -145,9 +149,10 @@ def ombb(points):
 
     hull_edges[i] = Line(p1, p2, i)
 
+  log.debug("Hull edges: %s." % (hull_edges))
+
   # Run rotating caliper algorithm.
-  _, dimensions = rectangle_dimensions(*sides)
-  best_area = dimensions[0] * dimensions[1]
+  best_area = sys.maxint
   best_points = ()
   best_dimensions = ()
   for i in range(0, len(hull)):
@@ -156,6 +161,7 @@ def ombb(points):
     use_side = None
     for side in sides:
       angle = Line.find_angle_between(side, hull_edges[side.index])
+      log.debug("Angle between lines: %f." % (angle))
       if angle < smallest_angle:
         smallest_angle = angle
         use_side = side
@@ -163,6 +169,8 @@ def ombb(points):
     # Rotate.
     use_side.slope = hull_edges[use_side.index].slope
     use_side.index = (use_side.index + 1) % len(hull)
+    log.debug("New slope: %s." % str((use_side.slope)))
+    log.debug("New index: %f." % (use_side.index))
 
     index = sides.index(use_side)
     if (index == 0 or index == 2):
@@ -172,6 +180,8 @@ def ombb(points):
     orthogonal = range(0, 4)
     orthogonal.remove(index)
     orthogonal.remove(parallel)
+    log.debug("Side indices: Main: %d, ||: %d, +: %d, %d." % \
+        (index, parallel, orthogonal[0], orthogonal[1]))
 
     sides[parallel].slope = use_side.slope
     for i in orthogonal:
@@ -180,10 +190,14 @@ def ombb(points):
     # The points should be top left, bottom right, top right, and bottom left.
     points, dimensions = rectangle_dimensions(*sides)
     area = dimensions[0] * dimensions[1]
+    log.debug("Area: %f." % (area))
     if area < best_area:
       best_area = area
       best_points = points
       best_dimensions = dimensions
+
+  log.debug("Best area: %f\n, Best points: %s\n, Best_dimensions: %s" % \
+      (best_area, best_points, best_dimensions))
 
   return best_points, best_dimensions
 

@@ -10,7 +10,6 @@ import time
 from starter import Program
 
 import log
-import rate
 
 # A simple memmory cache.
 class Cache:

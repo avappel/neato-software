@@ -5,10 +5,10 @@ import sys
 import time
 sys.path.append("..")
 
+from rate import Rate
 from starter import Program
 
 import log
-import rate
 
 class watchdog(Program):
   def setup(self):
@@ -20,6 +20,9 @@ class watchdog(Program):
     last_feeds = {}
     timeouts = {}
     callbacks = {}
+
+    rate = Rate()
+
     while True:
       rate.rate(1)
 

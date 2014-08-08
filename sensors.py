@@ -3,9 +3,9 @@
 import serial_api as control
 
 from programs import log
+from rate import Rate
 from swig import pru
 
-import rate
 import robot_status
 
 # Initialize pru. (It's okay if this runs more than once.)
@@ -21,20 +21,20 @@ class LDS:
 
   def __del__(self):
     control.send_command("SetLDSRotation off")
-    LDS.spun_up = False
 
   # Wait for sensor to spin up.
   def __spin_up(self):
     if not self.ready:
       log.info("Waiting for LDS spinup.")
-      if not self.is_active():
-        # Wait for a valid packet.
-        while True:
-          rate.rate(0.01)
+      rate = Rate()
 
-          scan = self.__get_scan()
-          if len(scan.keys()) > 1:
-            break
+      # Wait for a valid packet.
+      while True:
+        rate.rate(0.01)
+
+        scan = self.__get_scan()
+        if len(scan.keys()) > 1:
+          break
 
       self.ready = True
 
@@ -82,6 +82,7 @@ class LDS:
   def is_active():
     info = control.get_output("GetMotors")
     mvolts = int(info["Laser_mVolts"])
+    print mvolts
     return bool(mvolts)
 
   # Returns the rotation speed of the LDS sensor.
