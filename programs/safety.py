@@ -31,7 +31,7 @@ class safety(Program):
       rate.rate(0.1)
 
       # Check that we're not about to drive off a drop.
-      if (robot_status.GetDriving() or not self.enabled):
+      if (robot_status.get_driving() or not self.enabled):
         try:
           left_drop, right_drop = analog.drop(stale_time = 0)
           if stale_data:

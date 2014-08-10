@@ -26,7 +26,7 @@ class Wheels:
     while self.get_wheel_rpms(stale_time = 0)[1] != 0:
       time.sleep(0.1)
 
-    robot_status.IsNotDriving()
+    robot_status.is_not_driving()
 
   # Enables both drive motors.
   def enable(self):
@@ -39,7 +39,7 @@ class Wheels:
     if self.enabled:
       control.send_command("SetMotor LWheelDisable RWheelDisable")
       self.enabled = False
-      robot_status.IsNotDriving()
+      robot_status.is_not_driving()
 
   # A version of drive that employs the LDS in order to not crash into things.
   def safe_drive(self, left_dist, right_dist, speed):
@@ -123,7 +123,7 @@ class Wheels:
 
   # Instruct the drive motors to move.
   def drive(self, left_dist, right_dist, speed, block = True):
-    robot_status.IsDriving()
+    robot_status.is_driving()
     control.send_command("SetMotor %d %d %d" % (left_dist, right_dist, speed))
 
     if block:
@@ -143,7 +143,7 @@ class Wheels:
   # Stops both drive motors immediately.
   def stop(self):
     control.send_command("SetMotor -1 -1 300")
-    robot_status.IsNotDriving()
+    robot_status.is_not_driving()
 
   # Get RPMs of wheel motors.
   def get_wheel_rpms(self, **kwargs):

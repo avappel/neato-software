@@ -23,18 +23,19 @@ class Logger:
     self.location = location
     self.file = None
 
-    self.__remove_old()
+    if not robot_status.is_testing:
+      self.__remove_old()
 
-    name = str(time.time()).split(".")[0]
-    name += ".log"
-    self.file_path = os.path.join(self.location, name)
-    self.file = open(self.file_path, "w")
+      name = str(time.time()).split(".")[0]
+      name += ".log"
+      self.file_path = os.path.join(self.location, name)
+      self.file = open(self.file_path, "w")
 
-    # Set symlink.
-    current = os.path.join(self.location, "current")
-    if os.path.lexists(current):
-      os.remove(current)
-    os.symlink(name, current)
+      # Set symlink.
+      current = os.path.join(self.location, "current")
+      if os.path.lexists(current):
+        os.remove(current)
+      os.symlink(name, current)
 
   # Remove old logs if things are getting too big.
   def __remove_old(self):
@@ -63,7 +64,10 @@ class Logger:
     Logger.start_size = size
 
   def __del__(self):
-    self.file.close()
+    try:
+      self.file.close()
+    except AttributeError:
+      pass
 
   # Write a log message to the file.
   def write(self, level, name, message):
@@ -113,10 +117,14 @@ class log(Program):
         flush_pending = False
 
 # Shortcuts for logging to the root logger at specific levels.
-def __log_write(level, message):
-  program = robot_status.program
-  name = program.__class__.__name__
-  Program.write_to_feed("logging", (level, name, message))
+if robot_status.is_testing:
+  def __log_write(level, message):
+    print "%s: %s" % (level, message)
+else:
+  def __log_write(level, message):
+    program = robot_status.program
+    name = program.__class__.__name__
+    Program.write_to_feed("logging", (level, name, message))
 
 def debug(message):
   __log_write("DEBUG", message)

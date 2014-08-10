@@ -7,7 +7,8 @@ from pyhull.convex_hull import ConvexHull
 import math
 import sys
 
-import log
+from programs import log
+
 import utilities
 
 # Represents a line.
@@ -104,9 +105,9 @@ def ombb(points):
   Line.hull = hull
 
   # Find extreme points.
-  x_max = 0
+  x_max = -sys.maxint
   x_min = sys.maxint
-  y_max = 0
+  y_max = -sys.maxint
   y_min = sys.maxint
 
   top_point = None

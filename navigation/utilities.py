@@ -1,5 +1,7 @@
 # Useful functions for navigation that are used all over the place.
 
+from __future__ import division
+
 import math
 
 # Convert a pair from polar to rectangular.
@@ -13,7 +15,7 @@ def rectangular_pair(r, theta):
 def to_rectangular(scan):
   ret = []
   for angle in scan.keys():
-    ret.append(rectangular_pair(scan[angle][0], angle))
+    ret.append((angle, rectangular_pair(scan[angle][0], angle)))
 
   return ret
 

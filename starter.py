@@ -10,9 +10,10 @@ import os
 import sys
 import time
 
-from swig import pru
-
 import robot_status
+
+if not robot_status.is_testing:
+  from swig import pru
 
 # A class representing a single program to be run on the robot as one process.
 class Program:
@@ -97,7 +98,8 @@ class Program:
 
 if __name__ == "__main__":
   # Cleanup pru when everything is done.
-  atexit.register(pru.Cleanup)
+  if not robot_status.is_testing:
+    atexit.register(pru.Cleanup)
 
   # Check in the programs directory and import everything.
   sys.path.append("programs")

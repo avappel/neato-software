@@ -44,3 +44,25 @@ def remove_outliers(scan):
 
     return ret
 
+# Takes a blobified scan and returns blobs that it thinks are walls.
+def find_walls(blobs):
+  # The minimum ratio of a blob's longer side to its shorter side before it gets
+  # called a wall.
+  wall_ratio = 3
+
+  walls = []
+  for blob in blobs:
+    if len(blob.points) >= 10:
+      _, dimensions = blob.bounding_box()
+      longer = max(dimensions[0], dimensions[1])
+      shorter = min(dimensions[0], dimensions[1])
+
+      if shorter == 0:
+        # This must be a wall.
+        walls.append(blob)
+        continue
+      if longer / shorter >= wall_ratio:
+        log.debug("Found wall with ratio %f." % (longer / shorter))
+        walls.append(blob)
+
+  return walls
