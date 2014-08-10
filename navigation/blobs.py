@@ -112,9 +112,9 @@ def find_blobs(points):
           # Make a new blob.
           blobs.append(Blob([point, candidate]))
 
-      # We'll get to each candidate later as the point we're checking, so we can
-      # flag it as used.
-      x_order[candidate_index][1] = True
+        # We'll get to each candidate later as the point we're checking, so we can
+        # flag it as used.
+        x_order[candidate_index][1] = True
 
     # We can also get rid of the original point, because we've already found
     # everything close to it.

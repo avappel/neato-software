@@ -23,7 +23,7 @@ class Logger:
     self.location = location
     self.file = None
 
-    if not robot_status.is_testing:
+    if not robot_status.is_testing():
       self.__remove_old()
 
       name = str(time.time()).split(".")[0]
@@ -117,7 +117,7 @@ class log(Program):
         flush_pending = False
 
 # Shortcuts for logging to the root logger at specific levels.
-if robot_status.is_testing:
+if robot_status.is_testing():
   def __log_write(level, message):
     print "%s: %s" % (level, message)
 else:

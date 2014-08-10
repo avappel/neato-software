@@ -15,7 +15,7 @@ def rectangular_pair(r, theta):
 def to_rectangular(scan):
   ret = []
   for angle in scan.keys():
-    ret.append((angle, rectangular_pair(scan[angle][0], angle)))
+    ret.append(rectangular_pair(scan[angle][0], angle))
 
   return ret
 

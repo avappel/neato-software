@@ -80,8 +80,14 @@ def convex_hull(scan):
     points.append(scan[vertex[0]])
   points.append(scan[hull.vertices[-1][1]])
 
-  log.debug("Convex hull: %s." % (points))
-  return points
+  # Sometimes we get duplicate points.
+  seen = []
+  for point in points:
+    if point not in seen:
+      seen.append(point)
+
+  log.debug("Convex hull: %s." % (seen))
+  return seen
 
 # Calculates the dimensions of a rectangle defined by 4 lines, where l1 || to l2 and
 # l3 || l4
@@ -210,8 +216,12 @@ def get_room_stats(points):
   # Calculate the rotation angle.
   p1 = bounding_box[0]
   p2 = bounding_box[2]
-  slope = (p2[1] - p1[1]) / (p2[0] - p1[0])
-  # This angle should be to the right of the wall in front of the robot.
-  angle = math.degrees(math.atan(slope))
+  if p2[0] - p1[0] == 0:
+    # We're already lined up.
+    angle = 0
+  else:
+    slope = (p2[1] - p1[1]) / (p2[0] - p1[0])
+    # This angle should be to the right of the wall in front of the robot.
+    angle = math.degrees(math.atan(slope))
 
   return angle, dimensions
