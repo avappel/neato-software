@@ -1,11 +1,13 @@
 # Interface for building a map of a location.
 
-from programs import log
+import math
+import sys
 
-import motors
+from programs import log
 
 import blobs
 import filters
+import motors
 import room_analysis
 
 # Represents a single room.
@@ -23,20 +25,16 @@ class Room:
       log.error("Could not find any walls.")
       return
 
-    # Find the best wall, and line up to that.
-    wall_scores = []
-    for wall in walls.keys():
-      if walls[wall] == None:
-        score = len(wall.points)
-      else:
-        score = len(wall.points) + walls[wall]
-      print score
-      log.debug("Wall score: %f" % (score))
-      wall_scores.append(score)
+    # Line up with the best wall we have.
+    best_quality = -sys.maxint
+    best_wall = None
+    for wall in walls:
+      if wall[2] > best_quality:
+        best_quality = wall[2]
+        best_wall = wall
 
-    best = walls.keys()[wall_scores.index(max(wall_scores))]
-
-    angle, _ = room_analysis.get_room_stats(best.points)
+    # Find the angle of the wall.
+    angle = math.degrees(math.atan(best_wall[0]))
     log.info("Got angle of %f degrees." % (angle))
 
     self.wheels.turn(angle)

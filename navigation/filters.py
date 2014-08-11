@@ -4,6 +4,8 @@ from __future__ import division
 
 from programs import log
 
+import utilities
+
 # A simple filter that removes anything not within the standard deviation from
 # a polar scan.
 def remove_outliers(scan):
@@ -46,28 +48,39 @@ def remove_outliers(scan):
 
 # Takes a blobified scan and returns blobs that it thinks are walls.
 def find_walls(blobs):
-  # The minimum ratio of a blob's longer side to its shorter side before it gets
+  # The minimum number of points that must lie close to a line for it to be
   # called a wall.
-  wall_ratio = 4
+  consensus = 10
+  # The maximum distance in mm a point can be from the line
+  # before it doesn't count as part of the wall.
+  max_distance = 100
 
-  walls = {}
+  walls = []
   for blob in blobs:
-    print blob.points
-    if len(blob.points) >= 10:
-      _, dimensions = blob.bounding_box()
-      longer = max(dimensions[0], dimensions[1])
-      shorter = min(dimensions[0], dimensions[1])
+    if len(blob.points) < consensus:
+      continue
 
-      if shorter == 0:
-        # This must be a wall.
-        walls[blob] = None
-        continue
-      ratio = longer / shorter
-      if ratio >= wall_ratio:
-        log.debug("Found wall with ratio %f." % (longer / shorter))
-        walls[blob] = ratio
+    slope, intercept = blob.fit_line()
+    wall_points = []
+    total_distance = 0
+    for point in blob.points:
+      # Find the distance between the line of best fit and each point.
+      distance = utilities.line_distance(point, slope, intercept)
+      if distance <= max_distance:
+        wall_points.append(point)
+        total_distance += distance
 
-  print "Walls:"
-  for wall in walls.keys():
-    print wall.points
+    # Now see if we still have at least ten points.
+    if len(wall_points) < consensus:
+      continue
+
+    mean_distance = total_distance / len(wall_points)
+
+    # Quality is a rough measure of how good of a landmark this wall is.
+    quality = 2 * len(wall_points) - mean_distance
+
+    log.debug("Found wall with points: %s." % (wall_points))
+    log.debug("Wall quality: %f." % (quality))
+    walls.append((slope, intercept, quality))
+
   return walls

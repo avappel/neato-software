@@ -18,9 +18,9 @@ class Blob:
   def add_point(self, point):
     self.points.append(point)
 
-  # Finds a bounding box for this blob.
-  def bounding_box(self):
-    return room_analysis.ombb(self.points)
+  # Find the line of best fit for this blob.
+  def fit_line(self):
+    return utilities.fit_line(self.points)
 
   # Find what blob this point belongs to.
   @staticmethod
