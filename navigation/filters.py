@@ -6,23 +6,16 @@ from programs import log
 
 import utilities
 
+import numpy as np
+
 # A simple filter that removes anything not within the standard deviation from
 # a polar scan.
 def remove_outliers(scan):
     # Compute some statistics for our scan.
-    mean = 0
-    standard_deviation = 0
-    total = 0
-    for value in scan.items():
-      total += 1
-      mean += value[0]
-    mean /= total
+    distances = [item[1] for item in scan.items()]
 
-    for value in scan.items():
-      standard_deviation += (value[1][0] - mean) ** 2
-    standard_deviation /= total
-    standard_deviation = standard_deviation ** (1 / 2)
-
+    mean = np.mean(distances)
+    standard_deviation = np.std(distances)
     log.debug("Mean: %d." % (mean))
     log.debug("Standard Deviation: %d." % (standard_deviation))
 
