@@ -121,7 +121,7 @@ if __name__ == "__main__":
     programs.append(instance)
 
   # Create underlying shared memory array for robot status.
-  status_array = Array('i', robot_status.array_size)
+  status_array = Array('i', robot_status.ARRAY_SIZE)
   for program in programs:
     program.status_array = status_array
 

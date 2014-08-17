@@ -2,8 +2,11 @@
 
 import platform
 
+## CONSTANTS ##
 # The size of the underlying shared memory array.
-array_size = 1
+ARRAY_SIZE = 1
+# The distance between the wheels of the robot. (mm)
+ROBOT_WIDTH = 240
 
 # Local reference to the instance of the program for this process.
 program = None

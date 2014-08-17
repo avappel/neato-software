@@ -10,9 +10,6 @@ import math
 import robot_status
 import serial_api as control
 
-# The distance between the wheels of the robot. (mm)
-robot_width = 240
-
 class Wheels:
   enabled = False
 
@@ -132,7 +129,7 @@ class Wheels:
   # Instructs the robot to turn by a certain number of degrees. Positive for
   # counter-clockwise, negative for clockwise.
   def turn(self, angle):
-    circumference = robot_width * math.pi
+    circumference = robot_status.ROBOT_WIDTH * math.pi
     distance = angle * circumference / 360
 
     speed = abs(angle) * 300 / 90

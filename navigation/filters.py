@@ -77,3 +77,31 @@ def find_walls(blobs):
     walls.append((slope, intercept, quality))
 
   return walls
+
+# Find local extrema in a polar scan.
+def spikes(scan):
+  # How big the sum of the changes around a point must be for it to qualify as a
+  # spike. (mm)
+  spike_threshold = 1000
+
+  distances = [scan[angle][0] for angle in scan.keys()]
+  angles = scan.keys()
+
+  spikes = {}
+  for i in range(0, len(distances)):
+    center = distances[i]
+
+    # Find the immediate surrounding distances.
+    left = distances[i - 1]
+    if i < len(distances) - 1:
+      right = distances[i + 1]
+    else:
+      right = distances[0]
+
+    change = (left - center) + (right - center)
+    if change >= spike_threshold:
+      angle = angles[i]
+      log.debug("Found spike with change of %d and angle %d." % (change, angle))
+      spikes[angle] = center
+
+  return spikes

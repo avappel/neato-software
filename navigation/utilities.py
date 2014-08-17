@@ -49,8 +49,9 @@ def fit_line(points):
 
   return leastsq(residuals, p0, args = (y_values, x_values))[0]
 
-# Find the distance between a point and a line.
-def line_distance(point, m, b):
+# Find the point at the intersection of the line and a perpendicular line that
+# runs through a specified point.
+def landmark_point(point, m, b):
   # Find the intercept of a perpendicular line
   # going through the point.
   b_perp = point[1] + (1 / m) * point[0]
@@ -59,5 +60,9 @@ def line_distance(point, m, b):
   x_int = (b - b_perp) / ((-1 / m) - m)
   y_int = m * x_int + b
 
-  # Find the distance between this point and the original point.
-  return distance(point, (x_int, y_int))
+  return (x_int, y_int)
+
+# Find the shortest distance between a line and a point.
+def line_distance(point, m, b):
+  intersection = landmark_point(point, m, b)
+  return distance(point, intersection)

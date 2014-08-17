@@ -12,6 +12,7 @@ import robot_status
 if not pru.Init():
   raise RuntimeError("PRU initialization failed.")
 
+
 # Represents LDS sensor, and allows user to control it.
 class LDS:
   def __init__(self):
@@ -41,8 +42,8 @@ class LDS:
       log.info("LDS ready.")
 
   # Helper to get and parse a complete scan packet.
-  def __get_scan(self):
-    packet = control.get_output("GetLDSScan")
+  def __get_scan(self, *args, **kwargs):
+    packet = control.get_output("GetLDSScan", *args, **kwargs)
 
     # Get rid of help message.
     packet.pop("AngleInDegrees", None)
@@ -69,11 +70,11 @@ class LDS:
     return ret
 
   # Returns a usable scan packet to the user.
-  def get_scan(self):
+  def get_scan(self, *args, **kwargs):
     # Make sure sensor is ready.
     self.__spin_up()
 
-    packet = self.__get_scan()
+    packet = self.__get_scan(*args, **kwargs)
     packet.pop("ROTATION_SPEED", None);
     return packet
 
@@ -90,6 +91,7 @@ class LDS:
       return 0
 
     return self.__get_scan()["ROTATION_SPEED"]
+
 
 # A class for the analog sensors.
 class Analog:
@@ -121,19 +123,15 @@ class Analog:
 
     return voltage
 
+
 class Digital:
   def __get_sensors(self, **kwargs):
     return control.get_output("GetDigitalSensors", **kwargs)
 
   # Returns whether or not the wheels are extended.
   def wheels_extended(self, **kwargs):
-    while True:
-      info = self.__get_sensors(**kwargs)
-      try:
-        left = bool(int(info["SNSR_LEFT_WHEEL_EXTENDED"]))
-        right = bool(int(info["SNSR_RIGHT_WHEEL_EXTENDED"]))
-        break
-      except KeyError:
-        continue
+    info = self.__get_sensors(**kwargs)
+    left = bool(int(info["SNSR_LEFT_WHEEL_EXTENDED"]))
+    right = bool(int(info["SNSR_RIGHT_WHEEL_EXTENDED"]))
 
     return (left, right)

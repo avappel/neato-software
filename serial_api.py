@@ -7,7 +7,7 @@ import robot_status
 
 # Represents a command for the control program.
 class Command:
-  def __init__(self, command = None, stale_time = 10):
+  def __init__(self, command, stale_time = 10):
     program = robot_status.program
 
     # What program it came from.
