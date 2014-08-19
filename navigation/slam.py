@@ -5,6 +5,7 @@
 from __future__ import division
 
 import math
+import sys
 
 import numpy as np
 
@@ -21,16 +22,16 @@ import utilities
 # A class representing a single landmark.
 class Landmark:
   # How many times we have to see it before it's deemed usable.
-  usable_threshold = 5
+  usable_threshold = 1
   current_id = 0
   # The validation gate threshold.
-  lamda = 200
+  lamda = 100
 
   def __init__(self):
     # How many times we've seen it.
     self.sightings = 1
     # Where (relative to the robot's position then) we last saw it.
-    self.last_location = Non
+    self.last_location = None
 
     # The landmark's unique numerical ID.
     self.id = Landmark.current_id
@@ -45,11 +46,11 @@ class Landmark:
 
   # Covert an (x, y) location to a range and bearing.
   def __range_and_bearing(self, point):
-    x = self.point[0]
-    y = self.point[1]
+    x = point[0]
+    y = point[1]
 
     landmark_range = (x ** 2 + y ** 2) ** (1 / 2)
-    landmark_bearing = math.atan(y / x)
+    landmark_bearing = math.pi / 2 - math.atan(y / x)
 
     return np.vstack((landmark_range, landmark_bearing))
 
@@ -66,14 +67,14 @@ class Landmark:
   # Takes an the location of an observed landmark,
   # and returns whether it passes or fails the validation gate.
   def validation_gate(self, location):
-  #TODO (danielp): I'm not sure if I'm doing this right.
-    z = self.__range_and_bearing(location)
+    #TODO (danielp): I'm not sure if I'm doing this right.
+    #z = self.__range_and_bearing(location)
 
-    v = z - self.h
-    value = np.dot(np.dot(v.T, np.linalg.inv(self.S)), v)
-    log.debug("Validation gate value for landmark %d: %s." % (self.id, value))
+    #v = z - self.h
+    #value = np.dot(np.dot(np.reshape(v, (1, -1)), np.linalg.inv(self.S)), v)
+    #log.debug("Validation gate value for landmark %d: %s." % (self.id, value))
 
-    if value <= Landmark.lamda:
+    if utilities.distance(location, self.last_location) <= Landmark.lamda:
       return True
     return False
 
@@ -83,35 +84,46 @@ class LandmarkDatabase:
   def __init__(self):
     self.landmarks = []
     self.new_landmarks = []
+    # This is there to insure that no new landmark gets checked against
+    # landmarks that were found in the same cycle as it was.
+    self.new_this_cycle = []
 
   # Takes a landmark, and increments an existing one if it's seen it or adds it
   # as a new one if it hasn't.
   def check_landmark(self, location):
     # Check distance between this and all the known landmarks.
+    best_landmark = None
+    best_distance = sys.maxint
     for landmark in self.landmarks + self.new_landmarks:
+      # Find the landmark that it's closest to.
       distance = utilities.distance(landmark.last_location, location)
-      if landmark.validation_gate(location):
-        log.debug("Landmark at %s corresponds to landmark at %s." % \
-            (location, landmark.last_location))
+      if distance < best_distance:
+        best_distance = distance
+        best_landmark = landmark
 
-        landmark.sightings += 1
-        landmark.last_location = location
-        break
+    if (best_landmark and best_landmark.validation_gate(location)):
+      log.debug("Landmark at %s corresponds to landmark at %s." % \
+          (location, best_landmark.last_location))
+
+      best_landmark.sightings += 1
+      best_landmark.last_location = location
 
     else:
-      log.debug("Found a new landmark at %s." % (location))
+      log.debug("Found a new landmark at %s." % (str(location)))
 
       landmark = Landmark()
       landmark.last_location = location
-      self.new_landmarks.append(landmark)
+      self.new_this_cycle.append(landmark)
 
-  # Returns a list of the landmarks that are ready to be used.
+  # Returns a list of all the landmarks that are usable.
   def get_usable_landmarks(self):
-    log.debug("Usable landmarks: %s" % (self.landmarks))
     return self.landmarks
 
-  # Returns a list of landmarks that are new this cycle.
+  # Returns a list of landmarks that are being used for the first time.
   def get_new_landmarks(self):
+    self.new_landmarks.extend(self.new_this_cycle)
+    self.new_this_cycle = []
+
     ret = []
     for landmark in self.new_landmarks:
       if landmark.usable():
@@ -133,9 +145,9 @@ class Kalman:
   # How many mm's per 100 the wheel encoders are generally off by.
   encoder_drift = 1
   # How many mm's per 100 the LDS range readings are generally off by.
-  range_error = 2
-  # How many degrees the LDS bearing readings are generally off by.
-  bearing_error = 2
+  range_error = 0.1
+  # How many radians the LDS bearing readings are generally off by.
+  bearing_error = 0.02
 
   def __init__(self, initial_x, initial_y, initial_theta):
     self.landmark_db = LandmarkDatabase()
@@ -164,10 +176,11 @@ class Kalman:
     theta = self.X[2]
 
     distance = ((l_x - x) ** 2 + (l_y - y) ** 2) ** (1 / 2)
-    bearing = math.atan((l_y - y) / (l_x - x)) - theta
-    log.debug("Landmark %d: Range %f, Bearing %f." % (distance, bearing))
+    bearing = theta - math.atan((l_y - y) / (l_x - x))
+    log.debug("Landmark %d: Range %f, Bearing %f." % \
+        (landmark.id, distance, bearing))
 
-    return np.vstack(distance, bearing)
+    return np.vstack((distance, bearing))
 
   # Find the Jacobian of the measurement model for a particular landmark.
   def __measurement_jacobian(self, landmark):
@@ -237,7 +250,7 @@ class Kalman:
     # TODO (danielp): I'm kind of BSing the calculation for C.
     percentage = Kalman.encoder_drift * 0.01
     C = np.random.normal(percentage, percentage ** 2, 1)
-    Q = np.dot(np.dot(W, C), W.reshape(1, -1))
+    Q = np.dot(W * C, W.reshape(1, -1))
 
     return Q
 
@@ -300,6 +313,7 @@ class Kalman:
       landmark.h = self.__measurement_model(landmark)
       # Compute measurement noise.
       R = self.__measurement_noise(landmark.z[0])
+      log.debug("Measurement noise: %s." % (R))
 
       # Create the H matrix.
       H = np.zeros((2, len(landmarks) * 2 + 3))
@@ -310,16 +324,19 @@ class Kalman:
       H[0:2, (i + 3):(i + 5)] = jacobian[0:2, 0:2] * -1
       log.debug("H matrix for landmark %d: %s." % (landmark.id, H))
 
-      # Now we can compute the Kalman gain.
+      # Now we can compute the innovation covariance.
       V = np.identity(2)
       landmark.S = np.dot(np.dot(H, self.P), H.T) + np.dot(np.dot(V, R), V.T)
       log.debug("Innovation covariance for landmark %d: %s." %
           (landmark.id, landmark.S))
-      K = np.dot(np.dot(self.P, H.T), np.linalg.inverse(landmark.S))
+
+      K = np.dot(np.dot(self.P, H.T), np.linalg.inv(landmark.S))
       log.debug("Kalman gain for landmark %d: %s." % (landmark.id, K))
 
       # Compute a new state vector from the Kalman gain.
-      self.X = self.X + np.dot(K, (landmark.z - landmark.h))
+      innovation = landmark.z - landmark.h
+      log.debug("Innovation for landmark %d: %s." % (landmark.id, innovation))
+      self.X = self.X + np.dot(K, innovation)
       log.debug("Corrected state vector: %s." % (self.X))
 
   # Run step 3, incorporating new landmarks into the system state.
@@ -386,7 +403,7 @@ class Kalman:
       diag_column = next_column
       while column < next_column:
         # In the bottom two rows.
-        landmark_landmark = np.dot(J_xr, P[0:3, column:(column + 2)])
+        landmark_landmark = np.dot(J_xr, self.P[0:3, column:(column + 2)])
         self.P[row:(row + 2), column:(column + 2)] = landmark_landmark
 
         # The diagonal one.
@@ -412,7 +429,10 @@ class Kalman:
     self.landmark_update()
     self.incorporate_new(dx, dy, dtheta)
 
-    return (self.X[0], self.X[1], self.X[2])
+    # If we don't copy it, other things end up modifying the original array,
+    # which REALLY confuses the Kalman filter.
+    x_cop = np.copy(self.X)
+    return (x_cop[0], x_cop[1], x_cop[2])
 
 # Monitors and controls the SLAM algorithm.
 class Slam:
@@ -429,6 +449,8 @@ class Slam:
     # Temporary wheel positions to save at the start of driving operations.
     self.driving_l_wheel = 0
     self.driving_r_wheel = 0
+
+    self.kalman = Kalman(self.x_pos, self.y_pos, self.bearing)
 
   # Returns all the landmarks in a series of points.
   def __find_landmarks(self, points):
@@ -448,7 +470,7 @@ class Slam:
   # Gets laser data and uses kalman filter to improve odometry guesses.
   def __enhance_with_lidar(self, dx, dy, dtheta):
     scan = self.lds.get_scan(stale_time = 0)
-    scan = filters.remove_outliers()
+    scan = filters.remove_outliers(scan)
     points = utilities.to_rectangular(scan)
 
     landmarks = self.__find_landmarks(points)
@@ -458,7 +480,7 @@ class Slam:
     self.x_pos, self.y_pos, self.bearing = \
         self.kalman.run_iteration(landmarks, dx, dy, dtheta)
 
-    log.debug("Corrected position: (%f, %f)." % (self.x, self.y))
+    log.debug("Corrected position: (%f, %f)." % (self.x_pos, self.y_pos))
     log.debug("Corrected bearing: %f." % (self.bearing))
 
   # Gets run every time the robot starts driving.
@@ -541,22 +563,23 @@ class Slam:
     dx += straight_component * math.cos(old_bearing)
     dy += straight_component * math.sin(old_bearing)
 
+    self.x_pos += dx
+    self.y_pos += dy
+    self.bearing += dtheta
+
     # Normalize bearing.
     if self.bearing:
       self.bearing = self.bearing % \
           (2 * math.pi * (self.bearing / abs(self.bearing)))
-      if self.bearing < 0:
-        self.bearing = 2 * math.pi - abs(self.bearing)
+    if self.bearing < 0:
+      self.bearing = 2 * math.pi - abs(self.bearing)
 
-    self.x_pos += dx
-    self.y_pos += dy
-    self.bearing += dtheta
     log.debug("New position: (%f, %f)." % (self.x_pos, self.y_pos))
     log.debug("New bearing: %f." % (math.degrees(self.bearing)))
 
     # Now that the robot has moved, use laser data and the Kalman filter to
     # improve our odometry data.
-    #self.__enhance_with_lidar(dx, dy, dtheta)
+    self.__enhance_with_lidar(dx, dy, dtheta)
 
   # Returns SLAM's best guess as to our displacement.
   def get_displacement(self):

@@ -24,11 +24,16 @@ class test_navigation(Program):
 
     nav = slam.Slam()
     nav.started_driving()
-    wheels.drive(0, 100, 300)
+    wheels.drive(100, 100, 300)
     nav.stopped_driving()
     print nav.get_displacement()
 
     nav.started_driving()
-    wheels.drive(-300, -300, 300)
+    wheels.drive(-100, -100, 300)
     nav.stopped_driving()
     print nav.get_displacement()
+
+    #nav.started_driving()
+    #wheels.drive(200, 200, 300)
+    #nav.stopped_driving()
+    #print nav.get_displacement()

@@ -26,7 +26,7 @@ def remove_outliers(scan):
       if angle in scan.keys():
         distance = scan[angle][0]
         if abs(distance - mean) > standard_deviation:
-          if angle - last_error > 4:
+          if angle - last_error > 2:
             # We're far enough from an error spot that this is probably okay.
             ret[angle] = scan[angle]
           else:
