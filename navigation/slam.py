@@ -22,10 +22,10 @@ import utilities
 # A class representing a single landmark.
 class Landmark:
   # How many times we have to see it before it's deemed usable.
-  usable_threshold = 1
+  usable_threshold = 2
   current_id = 0
   # The validation gate threshold.
-  lamda = 100
+  lamda = 10000
 
   def __init__(self):
     # How many times we've seen it.
@@ -68,13 +68,14 @@ class Landmark:
   # and returns whether it passes or fails the validation gate.
   def validation_gate(self, location):
     #TODO (danielp): I'm not sure if I'm doing this right.
-    #z = self.__range_and_bearing(location)
+    z = self.__range_and_bearing(location)
 
-    #v = z - self.h
-    #value = np.dot(np.dot(np.reshape(v, (1, -1)), np.linalg.inv(self.S)), v)
-    #log.debug("Validation gate value for landmark %d: %s." % (self.id, value))
+    v = z - self.h
+    log.debug("Range and bearing difference: %s." % (v))
+    value = np.dot(np.dot(np.reshape(v, (1, -1)), np.linalg.inv(self.S)), v)
+    log.debug("Validation gate value for landmark %d: %s." % (self.id, value))
 
-    if utilities.distance(location, self.last_location) <= Landmark.lamda:
+    if value <= Landmark.lamda:
       return True
     return False
 
@@ -115,28 +116,15 @@ class LandmarkDatabase:
       landmark.last_location = location
       self.new_this_cycle.append(landmark)
 
-  # Returns a list of all the landmarks that are usable.
-  def get_usable_landmarks(self):
+  # Returns a list of all the landmarks.
+  def get_all_landmarks(self):
     return self.landmarks
 
   # Returns a list of landmarks that are being used for the first time.
   def get_new_landmarks(self):
-    self.new_landmarks.extend(self.new_this_cycle)
+    ret = self.new_this_cycle[:]
+    self.landmarks.extend(self.new_this_cycle)
     self.new_this_cycle = []
-
-    ret = []
-    for landmark in self.new_landmarks:
-      if landmark.usable():
-        log.debug("Using new landmark %d." % (landmark.id))
-        ret.append(landmark)
-
-        # Bounce it to the other list.
-        self.landmarks.append(landmark)
-
-    # Remove landmarks that are no longer new.
-    for landmark in ret:
-      self.new_landmarks.remove(landmark)
-
     return ret
 
 
@@ -181,7 +169,6 @@ class Kalman:
         (landmark.id, distance, bearing))
 
     return np.vstack((distance, bearing))
-
   # Find the Jacobian of the measurement model for a particular landmark.
   def __measurement_jacobian(self, landmark):
     l_x = landmark.last_location[0]
@@ -298,12 +285,12 @@ class Kalman:
 
     log.debug("New covariance matrix: %s." % (self.P))
 
-  # Run step 2, updating state from observed landmarks.
+  # Update the state from observed landmarks.
   def landmark_update(self):
     log.debug("Running SLAM landmark update step...")
 
-    # Get all the landmarks from the database that are ready to be used.
-    landmarks = self.landmark_db.get_usable_landmarks()
+    # Get all the landmarks from the database.
+    landmarks = self.landmark_db.get_all_landmarks()
 
     # Update landmark range and bearing.
     for i in range(0, len(landmarks)):
@@ -330,16 +317,18 @@ class Kalman:
       log.debug("Innovation covariance for landmark %d: %s." %
           (landmark.id, landmark.S))
 
-      K = np.dot(np.dot(self.P, H.T), np.linalg.inv(landmark.S))
-      log.debug("Kalman gain for landmark %d: %s." % (landmark.id, K))
+      # Only actually adjust the state if the landmark is usable.
+      if landmark.usable():
+        K = np.dot(np.dot(self.P, H.T), np.linalg.inv(landmark.S))
+        log.debug("Kalman gain for landmark %d: %s." % (landmark.id, K))
 
-      # Compute a new state vector from the Kalman gain.
-      innovation = landmark.z - landmark.h
-      log.debug("Innovation for landmark %d: %s." % (landmark.id, innovation))
-      self.X = self.X + np.dot(K, innovation)
-      log.debug("Corrected state vector: %s." % (self.X))
+        # Compute a new state vector from the Kalman gain.
+        innovation = landmark.z - landmark.h
+        log.debug("Innovation for landmark %d: %s." % (landmark.id, innovation))
+        self.X = self.X + np.dot(K, innovation)
+        log.debug("Corrected state vector: %s." % (self.X))
 
-  # Run step 3, incorporating new landmarks into the system state.
+  # Incorporate new landmarks into the system state.
   def incorporate_new(self, dx, dy, dtheta):
     log.debug("Running SLAM new landmark incorporation step...")
 
@@ -426,8 +415,8 @@ class Kalman:
       self.landmark_db.check_landmark(point)
 
     self.predict(dx, dy, dtheta)
-    self.landmark_update()
     self.incorporate_new(dx, dy, dtheta)
+    self.landmark_update()
 
     # If we don't copy it, other things end up modifying the original array,
     # which REALLY confuses the Kalman filter.
