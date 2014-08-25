@@ -6,6 +6,7 @@ from __future__ import division
 
 import math
 import sys
+import time
 
 import numpy as np
 
@@ -25,7 +26,7 @@ class Landmark:
   usable_threshold = 2
   current_id = 0
   # The validation gate threshold.
-  lamda = 10000
+  lamda = 500
 
   def __init__(self):
     # How many times we've seen it.
@@ -425,19 +426,22 @@ class Kalman:
 
 # Monitors and controls the SLAM algorithm.
 class Slam:
-  def __init__(self):
+  def __init__(self, start_x, start_y, start_theta):
     self.lds = sensors.LDS()
     self.wheels = motors.Wheels()
 
     # Start with a displacement of zero, and assume we are aligned with a wall.
-    self.x_pos = 0
-    self.y_pos = 0
-    # We start at 90 because it makes the math make more since, i.e. x_pos
-    # is sideways and y_pos is up and down.
-    self.bearing = math.pi / 2
-    # Temporary wheel positions to save at the start of driving operations.
-    self.driving_l_wheel = 0
-    self.driving_r_wheel = 0
+    self.x_pos = start_x
+    self.y_pos = start_y
+    self.bearing = start_theta
+    # Temporary wheel positions to save so we can figure out how far we've gone
+    # between iterations.
+    l_pos, r_pos = self.wheels.get_distance()
+    log.debug("Starting wheel positions: L: %d, R: %d." % (l_pos, r_pos))
+    self.last_l_wheel = l_pos
+    self.last_r_wheel = r_pos
+    # The time we last got a good position.
+    self.last_position_time = 0
 
     self.kalman = Kalman(self.x_pos, self.y_pos, self.bearing)
 
@@ -472,20 +476,26 @@ class Slam:
     log.debug("Corrected position: (%f, %f)." % (self.x_pos, self.y_pos))
     log.debug("Corrected bearing: %f." % (self.bearing))
 
-  # Gets run every time the robot starts driving.
-  def started_driving(self):
-    self.driving_l_wheel, self.driving_r_wheel = self.wheels.get_distance()
-    log.debug("Wheel position at start of driving: L: %d, R: %d" % \
-      (self.driving_l_wheel, self.driving_r_wheel))
+  # Updates odometry data and runs Kalman filter.
+  def __update(self, position, timestamp):
+    if timestamp < self.last_position_time:
+      # It's possible to get a position from the past.
+      log.warning("Got position that was before the last one.")
+      return
+    if position == (self.last_l_wheel, self.last_r_wheel):
+      # Don't do anything if the odometry doesn't think we've moved.
+      log.warning("Got same position.")
+      self.last_position_time = timestamp
+      return
 
-  # Gets run every time the robot stops driving.
-  def stopped_driving(self):
+    self.last_position_time = timestamp
     old_bearing = self.bearing
 
     # Figure out how far we drove.
-    l_wheel, r_wheel = self.wheels.get_distance()
-    distance_l = l_wheel - self.driving_l_wheel
-    distance_r = r_wheel - self.driving_r_wheel
+    distance_l = position[0] - self.last_l_wheel
+    distance_r = position[1] - self.last_r_wheel
+    self.last_l_wheel = distance_l
+    self.last_r_wheel = distance_r
     log.debug("Left distance: %d, Right distance: %d." % (distance_l, distance_r))
 
     circumference = robot_status.ROBOT_WIDTH * math.pi
@@ -570,6 +580,23 @@ class Slam:
     # improve our odometry data.
     self.__enhance_with_lidar(dx, dy, dtheta)
 
+  # Gets run every time the robot starts driving.
+  def started_driving(self, position, timestamp):
+    log.debug("Wheel position at start of driving: %s." % (str(position)))
+    self.__update(position, timestamp)
+
+  # Gets run every time the robot stops driving.
+  def stopped_driving(self, position, timestamp):
+    log.debug("Wheel position at end of driving: %s." % (str(position)))
+    self.__update(position, timestamp)
+
+  # Run every time we can get a new sensor packet, updates odometry and runs the
+  # Kalman filter.
+  def update_position(self):
+    position = self.wheels.get_distance()
+    log.debug("Current wheel position: %s." % (str(position)))
+    self.__update(position, time.time())
+
   # Returns SLAM's best guess as to our displacement.
   def get_displacement(self):
     return (self.x_pos, self.y_pos, math.degrees(self.bearing))
@@ -581,4 +608,4 @@ class Slam:
 
   # Resets the bearing.
   def reset_bearing(self):
-    self.bearing = 0
+    self.bearing = math.pi / 2

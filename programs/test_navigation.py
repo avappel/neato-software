@@ -1,15 +1,17 @@
 import sys
 sys.path.append("..")
 
-from navigation import filters, mapping, slam, utilities
+from navigation import filters, mapping, utilities
 from starter import Program
 
 import motors
 import sensors
+import slam_controller
 
 class test_navigation(Program):
   def setup(self):
     self.add_pipe("control")
+    self.add_pipe("slam_controller")
 
   def run(self):
     lds = sensors.LDS()
@@ -21,19 +23,12 @@ class test_navigation(Program):
     room.align_to_wall(scan)
 
     wheels = motors.Wheels()
+    slam_controller.start()
 
-    nav = slam.Slam()
-    nav.started_driving()
     wheels.drive(100, 100, 300)
-    nav.stopped_driving()
-    print nav.get_displacement()
+    print slam_controller.get_displacement()
 
-    nav.started_driving()
     wheels.drive(-100, -100, 300)
-    nav.stopped_driving()
-    print nav.get_displacement()
+    print slam_controller.get_displacement()
 
-    #nav.started_driving()
-    #wheels.drive(200, 200, 300)
-    #nav.stopped_driving()
-    #print nav.get_displacement()
+    slam_controller.stop()

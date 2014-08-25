@@ -9,6 +9,7 @@ from sensors import LDS
 import math
 import robot_status
 import serial_api as control
+import slam_controller
 
 class Wheels:
   enabled = False
@@ -24,6 +25,7 @@ class Wheels:
       time.sleep(0.1)
 
     robot_status.is_not_driving()
+    slam_controller.wheels_stopped(self.get_distance())
 
   # Enables both drive motors.
   def enable(self):
@@ -121,6 +123,7 @@ class Wheels:
   # Instruct the drive motors to move.
   def drive(self, left_dist, right_dist, speed, block = True):
     robot_status.is_driving()
+    slam_controller.wheels_started(self.get_distance())
     control.send_command("SetMotor %d %d %d" % (left_dist, right_dist, speed))
 
     if block:
@@ -141,6 +144,7 @@ class Wheels:
   def stop(self):
     control.send_command("SetMotor -1 -1 300")
     robot_status.is_not_driving()
+    slam_controller.wheels_stopped(self.get_distance)
 
   # Get RPMs of wheel motors.
   def get_wheel_rpms(self, **kwargs):
