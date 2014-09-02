@@ -25,10 +25,10 @@ class test_navigation(Program):
     wheels = motors.Wheels()
     slam_controller.start()
 
-    wheels.drive(100, 100, 300)
+    wheels.drive(200, 200, 100)
     print slam_controller.get_displacement()
 
-    wheels.drive(-100, -100, 300)
+    wheels.drive(-200, -200, 100)
     print slam_controller.get_displacement()
 
     slam_controller.stop()

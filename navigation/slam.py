@@ -26,7 +26,7 @@ class Landmark:
   usable_threshold = 2
   current_id = 0
   # The validation gate threshold.
-  lamda = 500
+  lamda = 10000
 
   def __init__(self):
     # How many times we've seen it.
@@ -494,8 +494,8 @@ class Slam:
     # Figure out how far we drove.
     distance_l = position[0] - self.last_l_wheel
     distance_r = position[1] - self.last_r_wheel
-    self.last_l_wheel = distance_l
-    self.last_r_wheel = distance_r
+    self.last_l_wheel = position[0]
+    self.last_r_wheel = position[1]
     log.debug("Left distance: %d, Right distance: %d." % (distance_l, distance_r))
 
     circumference = robot_status.ROBOT_WIDTH * math.pi
@@ -593,7 +593,7 @@ class Slam:
   # Run every time we can get a new sensor packet, updates odometry and runs the
   # Kalman filter.
   def update_position(self):
-    position = self.wheels.get_distance()
+    position = self.wheels.get_distance(stale_time = 0)
     log.debug("Current wheel position: %s." % (str(position)))
     self.__update(position, time.time())
 
