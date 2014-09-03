@@ -144,7 +144,7 @@ class Wheels:
   def stop(self):
     control.send_command("SetMotor -1 -1 300")
     robot_status.is_not_driving()
-    slam_controller.wheels_stopped(self.get_distance)
+    slam_controller.wheels_stopped(self.get_distance())
 
   # Get RPMs of wheel motors.
   def get_wheel_rpms(self, **kwargs):
