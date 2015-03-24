@@ -33,6 +33,8 @@ class Landmark:
     self.sightings = 1
     # Where (relative to the robot's position then) we last saw it.
     self.last_location = None
+    # The index into the state vector of the landmark's x coordinate.
+    self.state_index = None
 
     # The landmark's unique numerical ID.
     self.id = Landmark.current_id
@@ -89,6 +91,8 @@ class LandmarkDatabase:
     # This is there to insure that no new landmark gets checked against
     # landmarks that were found in the same cycle as it was.
     self.new_this_cycle = []
+    # Landmarks that we have a non-stale location for.
+    self.seen_this_cycle = []
 
   # Takes a landmark, and increments an existing one if it's seen it or adds it
   # as a new one if it hasn't.
@@ -109,6 +113,7 @@ class LandmarkDatabase:
 
       best_landmark.sightings += 1
       best_landmark.last_location = location
+      self.seen_this_cycle.append(landmark)
 
     else:
       log.debug("Found a new landmark at %s." % (str(location)))
@@ -158,8 +163,10 @@ class Kalman:
 
   # Find the measurement model of a landmark.
   def __measurement_model(self, landmark):
-    l_x = landmark.last_location[0]
-    l_y = landmark.last_location[1]
+    # For the landmark position, we use what we stored in the state vector from
+    # the last iteration.
+    l_x = self.X[landmark.state_index]
+    l_y = self.X[landmark.state_index + 1]
     x = self.X[0]
     y = self.X[1]
     theta = self.X[2]
@@ -312,7 +319,7 @@ class Kalman:
       H[0:2, (i + 3):(i + 5)] = jacobian[0:2, 0:2] * -1
       log.debug("H matrix for landmark %d: %s." % (landmark.id, H))
 
-      # Now we can compute the innovation covariance.
+      # Now we can compute the innovation covariance...
       V = np.identity(2)
       landmark.S = np.dot(np.dot(H, self.P), H.T) + np.dot(np.dot(V, R), V.T)
       log.debug("Innovation covariance for landmark %d: %s." %
@@ -359,6 +366,7 @@ class Kalman:
       # Add it to the state vector.
       self.X[next_index] = landmark.last_location[0]
       self.X[next_index + 1] = landmark.last_location[1]
+      landmark.state_index = next_index
       next_index += 2
 
       # Add it to the covariance matrix.
@@ -384,8 +392,9 @@ class Kalman:
       # Covariance between landmark and robot.
       self.P[next_row:(next_row + 2), 0:3] = robot_landmark_cov.T
       # TODO (danielp): There is an issue somewhere again, because in both
-      # papers that I looked at, the math doesn't work out. I'll therefore have
-      # to try both ways that it could be.
+      # papers that I looked at, the math doesn't work out. I have found other
+      # sources which seem to indicate that the way I have it now is correct.
+
       # Covariance between landmark and each other landmark.
       row = next_row
       column = 3
