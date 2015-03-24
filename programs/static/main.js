@@ -138,7 +138,7 @@ function LogText(context, text, color, y) {
 
   this.clear = function() {
     this.context.clearRect.apply(this.context, this.bounding_box);
-  }; 
+  };
 
   // Change the text.
   this.setText = function(text) {
@@ -214,13 +214,13 @@ function LidarDisplayer() {
     // Normalize distances for our display.
     var biggest = 0;
     for (i = 0; i < Object.keys(packet).length; ++i) {
-      var line = packet[String(i)]; 
+      var line = packet[String(i)];
       if (line) {
         var distance = Number(line[0]);
         biggest = Math.max(biggest, distance);
       }
     }
-    
+
     factor = 250 / parseFloat(biggest);
 
     // Draw a dot for each reading.
@@ -301,7 +301,7 @@ function LogDisplayer() {
   this.showing = [];
   // Whether or not the displayer is clear.
   this.is_clear = false;
-  
+
   // The canvas we are drawing on.
   this.context = document.getElementById("log_display").getContext("2d");
   // Set correct canvas size.
@@ -335,7 +335,7 @@ function LogDisplayer() {
     var to_delete = 0;
     for (var i = 0; i < this.showing.length; ++i) {
       var value = this.showing[i];
-     
+
       if (value.y <= 15) {
         value.clear();
         ++to_delete;
@@ -370,7 +370,7 @@ function LogDisplayer() {
 function updateBattery() {
   $.get("battery", function(data) {
     $("#voltage").text("Battery: " + data + "%");
-  
+
     // Give it a nice color.
     if (Number(data) >= 95) {
       $("#voltage").css("color", "green");
@@ -389,7 +389,7 @@ function updateCharging() {
       $("#charging").text("Not Charging");
       $("#charging").css("color", "red");
     }
-  }); 
+  });
 }
 
 function Logging() {
