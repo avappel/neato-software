@@ -16,7 +16,7 @@ if not robot_status.is_testing:
   from swig import pru
 
 # A class representing a single program to be run on the robot as one process.
-class Program:
+class Program(object):
   def __init__(self):
     # A list of all the pipes requested.
     self.pipe_names = []

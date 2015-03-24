@@ -112,7 +112,7 @@ class control(Program):
             self.__send_command(command)
         else:
           # We'll run this one later.
-          log.debug("Deffering command: %s" % (data.Command))
+          log.debug("Deferring command: %s" % (data.Command))
           deffered_commands.append(data)
 
   # Gets results from a command on the neato.
@@ -194,8 +194,8 @@ class control(Program):
     self.serial.flush()
 
     # Wait for end character.
-    response = ""
+    response = self.serial.read(len(command))
     while True:
-      response += self.serial.read(len(command) + 2)
+      response += self.serial.read(1)
       if response[-1] == "":
         break
