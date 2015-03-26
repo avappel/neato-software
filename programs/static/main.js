@@ -20,6 +20,41 @@ function main() {
   }, 1000);
 }
 
+
+// var x = {
+// 	z :'asdf',
+// 	y :'asdf2'
+// }
+
+// console.log(x.z) //return asdf
+
+var movement_enabled = {
+	mapping: false,
+	rc: false
+}
+
+// console.log(movement_enabled.mapping)
+
+// movement_enabled.rc = true
+
+// console.log(movement_enabled.rc)
+
+// console.log(movement_enabled)
+
+// if(movement_enabled.mapping) {
+
+// 	movement_enabled.mapping = false;
+// 	movement_enabled.rc = true;
+// 	console.log(movement_enabled.mapping);
+// }
+
+// else {
+// 	movement_enabled.rc = false;
+// 	movement_enabled.mapping = true;
+// 	console.log(movement_enabled.mapping);
+// }
+
+
 // A class for handling movement control.
 function Movement() {
   this.enabled = false;
@@ -45,7 +80,7 @@ function Movement() {
         $.post("drive_backward/", function() {});
         this.driving = "drive_backward/";
       } else if (evn.which === 37 && !this.turning) {
-        $.post("turn_left/", function() {});
+        $.post("turn_left/", function() {});e
         this.turning = "turn_left/";
       } else if (evn.which === 39 && !this.turning) {
         $.post("turn_right/", function() {});
@@ -84,14 +119,14 @@ function Movement() {
 
   this.toggleEnabled = function() {
     if (!this.enabled) {
-      $("#enable_rc").text("Click here to disable RC.");
+      $("#enable_rc").text("Click here to disable RC");
       $("#enable_rc").css("color", "#D11919");
       this.enabled = true;
 
       // Start watchdog.
       $.post("feed_watchdog/", function() {});
     } else {
-      $("#enable_rc").text("Click here to enable RC.");
+      $("#enable_rc").text("Click here to enable RC");
       $("#enable_rc").css("color", "#009933");
       this.enabled = false;
 
@@ -102,7 +137,25 @@ function Movement() {
 
   var instance = this;
   $("#enable_rc").click(function() {
-    instance.toggleEnabled();
+
+	if(movement_enabled.mapping) {
+
+		movement_enabled.mapping = false;
+		movement_enabled.rc = true;
+		// console.log(movement_enabled.mapping);
+    	instance.toggleEnabled();
+    	console.log("enabled");
+	}
+
+	else {
+		movement_enabled.rc = false;
+		movement_enabled.mapping = true;
+		// console.log(movement_enabled.mapping);
+    	instance.toggleEnabled();
+    	console.log("disabled");
+	}
+
+
   });
 
   // Set up key bindings.
